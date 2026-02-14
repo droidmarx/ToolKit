@@ -7,8 +7,8 @@ const BASE_URL = `https://api.telegram.org/bot${TOKEN}`;
 
 const MATERIAL_FORM_URL = 'https://forms.gle/UEqhzzLM3TGXgTbE6';
 const GOOGLE_MAPS_URL = 'https://goo.gl/maps/88VJ2ZpSiy4F2Qas7?g_st=aw';
-// As I cannot access uploaded files, I'm using the QR code URL from your app's configuration.
-const QR_CODE_IMAGE_URL = 'https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=https://github.com/google/studio-bot-example-react-app';
+// The QR code is now served from the app's public folder.
+const QR_CODE_IMAGE_URL = 'https://tool-kit-one.vercel.app/qr.jpg';
 
 async function sendApiRequest(method: string, body: object) {
     const url = `${BASE_URL}/${method}`;

@@ -3,7 +3,7 @@
     {
       "id": "qr-code",
       "description": "QR Code",
-      "imageUrl": "https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=https://github.com/google/studio-bot-example-react-app",
+      "imageUrl": "/qr.jpg",
       "imageHint": "qr code"
     }
   ]
