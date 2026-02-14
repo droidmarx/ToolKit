@@ -10,6 +10,7 @@ const GOOGLE_MAPS_URL = 'https://goo.gl/maps/88VJ2ZpSiy4F2Qas7?g_st=aw';
 const SITE_URL_TOP_DRAB = 'https://top-drab.vercel.app/';
 const QR_CODE_IMAGE_URL = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${SITE_URL_TOP_DRAB}`;
 const SITE_URL_TOOL_KIT_ONE = 'https://tool-kit-one.vercel.app/';
+const ROUTER_URL = 'http://192.168.1.1';
 
 
 async function sendApiRequest(method: string, body: object) {
@@ -58,7 +59,7 @@ export async function POST(req: Request) {
                 case '/start':
                     await sendApiRequest('sendMessage', {
                         chat_id: chatId,
-                        text: 'Olá! Sou seu bot de assistência CTO. Use os seguintes comandos:\n\n/command1 - Link para pedido de material.\n/command2 - Link para o Google Maps.\n/command3 - Receber QR Code e link do site.\n/command4 - Receber link do painel de ferramentas.',
+                        text: 'Olá! Sou seu bot de assistência CTO. Use os seguintes comandos:\n\n/command1 - Link para pedido de material.\n/command2 - Link para o Google Maps.\n/command3 - Receber QR Code e link do site.\n/command4 - Receber link do painel de ferramentas.\n/command5 - Abrir página do roteador.',
                     });
                     break;
                 
@@ -88,6 +89,13 @@ export async function POST(req: Request) {
                     await sendApiRequest('sendMessage', {
                         chat_id: chatId,
                         text: `Aqui está o link do painel de ferramentas: ${SITE_URL_TOOL_KIT_ONE}`,
+                    });
+                    break;
+                
+                case '/command5':
+                    await sendApiRequest('sendMessage', {
+                        chat_id: chatId,
+                        text: `Para acessar seu roteador, tente este link: ${ROUTER_URL}\n\nNota: Este é um endereço comum. Se não funcionar, o endereço do seu roteador pode ser diferente.`,
                     });
                     break;
 
