@@ -3,7 +3,7 @@
     {
       "id": "qr-code",
       "description": "QR Code para o App",
-      "imageUrl": "https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=https://tool-kit-one.vercel.app/",
+      "imageUrl": "https://raw.githubusercontent.com/droidmarx/ToolKit/main/qr.jpg",
       "imageHint": "qr code"
     }
   ]
