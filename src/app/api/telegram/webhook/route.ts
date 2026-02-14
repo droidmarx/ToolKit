@@ -1,0 +1,91 @@
+'use server';
+
+import { NextResponse } from 'next/server';
+
+const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const BASE_URL = `https://api.telegram.org/bot${TOKEN}`;
+
+const MATERIAL_FORM_URL = 'https://forms.gle/UEqhzzLM3TGXgTbE6';
+const GOOGLE_MAPS_URL = 'https://goo.gl/maps/88VJ2ZpSiy4F2Qas7?g_st=aw';
+// As I cannot access uploaded files, I'm using the QR code URL from your app's configuration.
+const QR_CODE_IMAGE_URL = 'https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=https://github.com/google/studio-bot-example-react-app';
+
+async function sendApiRequest(method: string, body: object) {
+    const url = `${BASE_URL}/${method}`;
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body),
+        });
+        if (!response.ok) {
+            const errorBody = await response.json();
+            console.error(`Telegram API error: ${response.status}`, errorBody);
+        }
+        return response;
+    } catch (error) {
+        console.error('Failed to send API request to Telegram', error);
+    }
+}
+
+export async function POST(req: Request) {
+    if (!TOKEN) {
+        console.error('TELEGRAM_BOT_TOKEN is not set in environment variables.');
+        return NextResponse.json({ status: 'error', message: 'Bot token not configured.' }, { status: 500 });
+    }
+
+    try {
+        const body = await req.json();
+
+        if (body.message) {
+            const { chat, text } = body.message;
+            const chatId = chat.id;
+
+            let command = text.split(' ')[0];
+
+            switch (command) {
+                case '/start':
+                    await sendApiRequest('sendMessage', {
+                        chat_id: chatId,
+                        text: 'Olá! Sou seu bot de assistência CTO. Use os seguintes comandos:\n\n/material - Link para pedido de material.\n/mapa - Link para o Google Maps.\n/qrcode - Receber a imagem do QR Code.',
+                    });
+                    break;
+                
+                case '/material':
+                    await sendApiRequest('sendMessage', {
+                        chat_id: chatId,
+                        text: `Aqui está o link para o pedido de material: ${MATERIAL_FORM_URL}`,
+                    });
+                    break;
+                
+                case '/mapa':
+                    await sendApiRequest('sendMessage', {
+                        chat_id: chatId,
+                        text: `Aqui está o link do Google Maps: ${GOOGLE_MAPS_URL}`,
+                    });
+                    break;
+
+                case '/qrcode':
+                    await sendApiRequest('sendPhoto', {
+                        chat_id: chatId,
+                        photo: QR_CODE_IMAGE_URL,
+                        caption: 'Aqui está o QR Code solicitado.',
+                    });
+                    break;
+
+                default:
+                    await sendApiRequest('sendMessage', {
+                        chat_id: chatId,
+                        text: 'Comando não reconhecido. Digite /start para ver a lista de comandos disponíveis.',
+                    });
+                    break;
+            }
+        }
+    } catch (error) {
+        console.error('Error handling webhook:', error);
+    }
+
+    return NextResponse.json({ status: 'ok' });
+}
