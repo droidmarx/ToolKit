@@ -7,7 +7,6 @@ const BASE_URL = `https://api.telegram.org/bot${TOKEN}`;
 
 const MATERIAL_FORM_URL = 'https://forms.gle/UEqhzzLM3TGXgTbE6';
 const GOOGLE_MAPS_URL = 'https://goo.gl/maps/88VJ2ZpSiy4F2Qas7?g_st=aw';
-// The QR code is now served from the app's public folder.
 const QR_CODE_IMAGE_URL = 'https://tool-kit-one.vercel.app/qr.jpg';
 
 async function sendApiRequest(method: string, body: object) {
@@ -23,6 +22,8 @@ async function sendApiRequest(method: string, body: object) {
         if (!response.ok) {
             const errorBody = await response.json();
             console.error(`Telegram API error: ${response.status}`, errorBody);
+        } else {
+            console.log(`Telegram API call '${method}' successful.`);
         }
         return response;
     } catch (error) {
@@ -31,19 +32,24 @@ async function sendApiRequest(method: string, body: object) {
 }
 
 export async function POST(req: Request) {
+    console.log('Webhook received a request.');
+    
     if (!TOKEN) {
-        console.error('TELEGRAM_BOT_TOKEN is not set in environment variables.');
+        console.error('CRITICAL: TELEGRAM_BOT_TOKEN is not set in environment variables.');
         return NextResponse.json({ status: 'error', message: 'Bot token not configured.' }, { status: 500 });
     }
+    console.log('TELEGRAM_BOT_TOKEN is present.');
 
     try {
         const body = await req.json();
+        console.log('Webhook body:', JSON.stringify(body, null, 2));
 
-        if (body.message) {
+        if (body.message && body.message.text) {
             const { chat, text } = body.message;
             const chatId = chat.id;
 
-            let command = text.split(' ')[0];
+            const command = text.split(' ')[0];
+            console.log(`Processing command: '${command}' for chat ID: ${chatId}`);
 
             switch (command) {
                 case '/start':
@@ -76,12 +82,15 @@ export async function POST(req: Request) {
                     break;
 
                 default:
+                    console.log(`Command '${command}' not recognized.`);
                     await sendApiRequest('sendMessage', {
                         chat_id: chatId,
                         text: 'Comando não reconhecido. Digite /start para ver a lista de comandos disponíveis.',
                     });
                     break;
             }
+        } else {
+            console.log('Received a message without text or not a message update, ignoring.');
         }
     } catch (error) {
         console.error('Error handling webhook:', error);
