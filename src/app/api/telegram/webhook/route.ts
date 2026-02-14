@@ -1,44 +1,18 @@
 'use server';
 
 import { NextResponse } from 'next/server';
-
-const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const BASE_URL = `https://api.telegram.org/bot${TOKEN}`;
+import { sendTelegramApiRequest } from '@/lib/telegram-api';
 
 const MATERIAL_FORM_URL = 'https://forms.gle/UEqhzzLM3TGXgTbE6';
 const GOOGLE_MAPS_URL = 'https://goo.gl/maps/88VJ2ZpSiy4F2Qas7?g_st=aw';
 const SITE_URL_TOP_DRAB = 'https://top-drab.vercel.app/';
 const QR_CODE_IMAGE_URL = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${SITE_URL_TOP_DRAB}`;
 const SITE_URL_TOOL_KIT_ONE = 'https://tool-kit-one.vercel.app/';
-const ROUTER_URL = 'http://192.168.1.1';
-
-
-async function sendApiRequest(method: string, body: object) {
-    const url = `${BASE_URL}/${method}`;
-    try {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(body),
-        });
-        const responseBody = await response.json();
-        if (!response.ok) {
-            console.error(`Telegram API error: ${response.status}`, responseBody);
-        } else {
-            console.log(`Telegram API call '${method}' successful. Response:`, responseBody);
-        }
-        return response;
-    } catch (error) {
-        console.error('Failed to send API request to Telegram', error);
-    }
-}
 
 export async function POST(req: Request) {
     console.log('Webhook received a request.');
     
-    if (!TOKEN) {
+    if (!process.env.TELEGRAM_BOT_TOKEN) {
         console.error('CRITICAL: TELEGRAM_BOT_TOKEN is not set in environment variables.');
         return NextResponse.json({ status: 'error', message: 'Bot token not configured.' }, { status: 500 });
     }
@@ -57,28 +31,28 @@ export async function POST(req: Request) {
 
             switch (command) {
                 case '/start':
-                    await sendApiRequest('sendMessage', {
+                    await sendTelegramApiRequest('sendMessage', {
                         chat_id: chatId,
                         text: 'Olá! Sou seu bot de assistência CTO. Use os seguintes comandos:\n\n/command1 - Link para pedido de material.\n/command2 - Link para o Google Maps.\n/command3 - Receber QR Code e link do site.\n/command4 - Receber link do painel de ferramentas.',
                     });
                     break;
                 
                 case '/command1':
-                    await sendApiRequest('sendMessage', {
+                    await sendTelegramApiRequest('sendMessage', {
                         chat_id: chatId,
                         text: `Aqui está o link para o pedido de material: ${MATERIAL_FORM_URL}`,
                     });
                     break;
                 
                 case '/command2':
-                    await sendApiRequest('sendMessage', {
+                    await sendTelegramApiRequest('sendMessage', {
                         chat_id: chatId,
                         text: `Aqui está o link do Google Maps: ${GOOGLE_MAPS_URL}`,
                     });
                     break;
 
                 case '/command3':
-                    await sendApiRequest('sendPhoto', {
+                    await sendTelegramApiRequest('sendPhoto', {
                         chat_id: chatId,
                         photo: QR_CODE_IMAGE_URL,
                         caption: `Aqui está o QR Code e o link do site: ${SITE_URL_TOP_DRAB}`,
@@ -86,7 +60,7 @@ export async function POST(req: Request) {
                     break;
 
                 case '/command4':
-                    await sendApiRequest('sendMessage', {
+                    await sendTelegramApiRequest('sendMessage', {
                         chat_id: chatId,
                         text: `Aqui está o link do painel de ferramentas: ${SITE_URL_TOOL_KIT_ONE}`,
                     });
@@ -94,7 +68,7 @@ export async function POST(req: Request) {
                 
                 default:
                     console.log(`Command '${command}' not recognized.`);
-                    await sendApiRequest('sendMessage', {
+                    await sendTelegramApiRequest('sendMessage', {
                         chat_id: chatId,
                         text: 'Comando não reconhecido. Digite /start para ver a lista de comandos disponíveis.',
                     });
