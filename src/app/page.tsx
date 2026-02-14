@@ -58,7 +58,7 @@ const ToolButton = ({ onClick, href, icon, title, primary = false }: { onClick?:
   return <button {...commonProps}>{content}</button>;
 };
 
-// Map Icon Component
+// Map Icon Button Component
 const MapIconButton = ({ href, title, icon }: { href: string; title: string; icon: React.ReactNode }) => (
   <a
     href={href}
@@ -67,7 +67,7 @@ const MapIconButton = ({ href, title, icon }: { href: string; title: string; ico
     title={title}
     className="group relative flex items-center justify-center w-16 h-16 rounded-full bg-background border border-white/10 transition-all duration-300 hover:bg-primary hover:border-primary hover:scale-110"
   >
-    <div className="text-secondary group-hover:text-primary-foreground transition-colors">
+    <div className="text-accent group-hover:text-primary-foreground transition-colors">
       {icon}
     </div>
   </a>
@@ -215,7 +215,7 @@ export default function Home() {
               {/* Map Section */}
               <div className="col-span-2 sm:col-span-3 md:col-span-4 p-4 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm flex flex-col md:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <Map size={24} className="text-secondary" />
+                  <Map size={24} className="text-accent" />
                   <h3 className="font-medium">Mapas CTO</h3>
                 </div>
                 <div className="flex items-center justify-center gap-4">
