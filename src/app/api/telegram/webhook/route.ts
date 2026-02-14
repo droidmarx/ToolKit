@@ -17,14 +17,22 @@ type User = {
 };
 
 async function findUserByChatId(chatId: number): Promise<User | null> {
+    const url = `${MOCK_API_URL}?chatId=${chatId}`;
+    console.log(`API_HELPER: Finding user with URL: ${url}`);
     try {
-        const response = await fetch(`${MOCK_API_URL}?chatId=${chatId}`);
+        const response = await fetch(url);
         if (!response.ok) {
-            console.error('API_HELPER: Failed to fetch user from mock API', await response.text());
+            console.error('API_HELPER: Failed to fetch user from mock API', `Status: ${response.status}`, await response.text());
             return null;
         }
         const users = await response.json();
-        return users.length > 0 ? users[0] : null;
+        if (users.length > 0) {
+            console.log(`API_HELPER: Found user:`, users[0]);
+            return users[0];
+        } else {
+            console.log(`API_HELPER: User not found for chat ID ${chatId}`);
+            return null;
+        }
     } catch (error) {
         console.error('API_HELPER: Error finding user by chat ID:', error);
         return null;
@@ -39,7 +47,6 @@ export async function POST(req: Request) {
         console.error('CRITICAL: TELEGRAM_BOT_TOKEN is not set in environment variables.');
         return NextResponse.json({ status: 'error', message: 'Bot token not configured.' }, { status: 500 });
     }
-    console.log('TELEGRAM_BOT_TOKEN is present.');
 
     try {
         const body = await req.json();
@@ -55,24 +62,36 @@ export async function POST(req: Request) {
             switch (command) {
                 case '/start':
                     try {
-                        const existingUser = await findUserByChatId(chatId);
-                        if (existingUser) {
-                             if (!existingUser.notificationsEnabled) {
-                                await fetch(`${MOCK_API_URL}/${existingUser.id}`, {
+                        let user = await findUserByChatId(chatId);
+                        console.log('/start: Checking user. Found:', user ? `ID ${user.id}` : 'No');
+
+                        if (user) {
+                            if (!user.notificationsEnabled) {
+                                console.log(`/start: User ${user.id} has notifications disabled. Enabling...`);
+                                const response = await fetch(`${MOCK_API_URL}/${user.id}`, {
                                     method: 'PUT',
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({ notificationsEnabled: true }),
                                 });
+                                if (!response.ok) {
+                                     console.error(`/start: Failed to enable notifications for user ${user.id}. Status: ${response.status}`, await response.text());
+                                }
                             }
                         } else {
-                            await fetch(MOCK_API_URL, {
+                            console.log('/start: User not found. Creating new user...');
+                            const response = await fetch(MOCK_API_URL, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ chatId: chatId, notificationsEnabled: true }),
                             });
+                             if (response.ok) {
+                                console.log(`/start: Successfully created new user for chat ID ${chatId}`);
+                            } else {
+                                console.error(`/start: Failed to create new user for chat ID ${chatId}. Status: ${response.status}`, await response.text());
+                            }
                         }
                     } catch (apiError) {
-                        console.error("Failed to register user in mock API", apiError);
+                        console.error("/start: Error during API interaction", apiError);
                     }
                     
                     await sendTelegramApiRequest('sendMessage', {
@@ -111,17 +130,22 @@ export async function POST(req: Request) {
                     break;
                 
                 case '/command5':
-                    const user = await findUserByChatId(chatId);
-                    if (!user) {
-                        await sendTelegramApiRequest('sendMessage', {
-                            chat_id: chatId,
-                            text: 'Você ainda não está registrado. Use o comando /start para começar e poder gerenciar seus avisos.',
-                        });
-                        break;
-                    }
-
-                    const newStatus = !user.notificationsEnabled;
                     try {
+                        const user = await findUserByChatId(chatId);
+                        console.log('/command5: Checking user. Found:', user ? `ID ${user.id}` : 'No');
+                        
+                        if (!user) {
+                            console.log(`/command5: User not found for chat ID ${chatId}. Sending registration message.`);
+                            await sendTelegramApiRequest('sendMessage', {
+                                chat_id: chatId,
+                                text: 'Você ainda não está registrado. Use o comando /start para começar e poder gerenciar seus avisos.',
+                            });
+                            break;
+                        }
+
+                        const newStatus = !user.notificationsEnabled;
+                        console.log(`/command5: Toggling notifications for user ${user.id} to ${newStatus}`);
+
                         const updateResponse = await fetch(`${MOCK_API_URL}/${user.id}`, {
                             method: 'PUT',
                             headers: { 'Content-Type': 'application/json' },
@@ -129,20 +153,21 @@ export async function POST(req: Request) {
                         });
 
                         if (updateResponse.ok) {
+                            console.log(`/command5: Successfully updated user ${user.id}.`);
                              await sendTelegramApiRequest('sendMessage', {
                                 chat_id: chatId,
                                 text: `Avisos de material semanais foram ${newStatus ? 'ATIVADOS' : 'DESATIVADOS'}.`,
                             });
-} else {
+                        } else {
                              const errorBody = await updateResponse.text();
-                             console.error("Failed to update user preferences", errorBody);
+                             console.error(`/command5: Failed to update preferences for user ${user.id}. Status: ${updateResponse.status}`, errorBody);
                              await sendTelegramApiRequest('sendMessage', {
                                 chat_id: chatId,
                                 text: 'Ocorreu um erro ao atualizar suas preferências. Tente novamente.',
                             });
                         }
                     } catch (apiError) {
-                        console.error("Failed to update user preferences", apiError);
+                        console.error(`/command5: Error during API interaction`, apiError);
                          await sendTelegramApiRequest('sendMessage', {
                             chat_id: chatId,
                             text: 'Ocorreu um erro de comunicação ao atualizar suas preferências. Tente novamente.',
@@ -151,7 +176,6 @@ export async function POST(req: Request) {
                     break;
                 
                 default:
-                    console.log(`Command '${command}' not recognized.`);
                     await sendTelegramApiRequest('sendMessage', {
                         chat_id: chatId,
                         text: 'Comando não reconhecido. Digite /start para ver a lista de comandos disponíveis.',
