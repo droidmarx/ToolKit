@@ -49,25 +49,25 @@ export async function POST(req: Request) {
                 case '/start':
                     await sendApiRequest('sendMessage', {
                         chat_id: chatId,
-                        text: 'Olá! Sou seu bot de assistência CTO. Use os seguintes comandos:\n\n/material - Link para pedido de material.\n/mapa - Link para o Google Maps.\n/qrcode - Receber a imagem do QR Code.',
+                        text: 'Olá! Sou seu bot de assistência CTO. Use os seguintes comandos:\n\n/command1 - Link para pedido de material.\n/command2 - Link para o Google Maps.\n/command3 - Receber a imagem do QR Code.',
                     });
                     break;
                 
-                case '/material':
+                case '/command1':
                     await sendApiRequest('sendMessage', {
                         chat_id: chatId,
                         text: `Aqui está o link para o pedido de material: ${MATERIAL_FORM_URL}`,
                     });
                     break;
                 
-                case '/mapa':
+                case '/command2':
                     await sendApiRequest('sendMessage', {
                         chat_id: chatId,
                         text: `Aqui está o link do Google Maps: ${GOOGLE_MAPS_URL}`,
                     });
                     break;
 
-                case '/qrcode':
+                case '/command3':
                     await sendApiRequest('sendPhoto', {
                         chat_id: chatId,
                         photo: QR_CODE_IMAGE_URL,
