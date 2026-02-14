@@ -59,7 +59,7 @@ export async function POST(req: Request) {
                 case '/start':
                     await sendApiRequest('sendMessage', {
                         chat_id: chatId,
-                        text: 'Olá! Sou seu bot de assistência CTO. Use os seguintes comandos:\n\n/command1 - Link para pedido de material.\n/command2 - Link para o Google Maps.\n/command3 - Receber QR Code e link do site.\n/command4 - Receber link do painel de ferramentas.\n/command5 - Abrir página do roteador.',
+                        text: 'Olá! Sou seu bot de assistência CTO. Use os seguintes comandos:\n\n/command1 - Link para pedido de material.\n/command2 - Link para o Google Maps.\n/command3 - Receber QR Code e link do site.\n/command4 - Receber link do painel de ferramentas.',
                     });
                     break;
                 
@@ -92,13 +92,6 @@ export async function POST(req: Request) {
                     });
                     break;
                 
-                case '/command5':
-                    await sendApiRequest('sendMessage', {
-                        chat_id: chatId,
-                        text: `Para acessar seu roteador, tente este link: ${ROUTER_URL}\n\nNota: Este é um endereço comum. Se não funcionar, o endereço do seu roteador pode ser diferente.`,
-                    });
-                    break;
-
                 default:
                     console.log(`Command '${command}' not recognized.`);
                     await sendApiRequest('sendMessage', {
