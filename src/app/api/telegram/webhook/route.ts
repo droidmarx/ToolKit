@@ -7,7 +7,7 @@ const BASE_URL = `https://api.telegram.org/bot${TOKEN}`;
 
 const MATERIAL_FORM_URL = 'https://forms.gle/UEqhzzLM3TGXgTbE6';
 const GOOGLE_MAPS_URL = 'https://goo.gl/maps/88VJ2ZpSiy4F2Qas7?g_st=aw';
-const QR_CODE_IMAGE_URL = 'https://raw.githubusercontent.com/droidmarx/ToolKit/main/qr.jpg';
+const QR_CODE_IMAGE_URL = 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=https://tool-kit-one.vercel.app/';
 
 async function sendApiRequest(method: string, body: object) {
     const url = `${BASE_URL}/${method}`;
@@ -19,11 +19,11 @@ async function sendApiRequest(method: string, body: object) {
             },
             body: JSON.stringify(body),
         });
+        const responseBody = await response.json();
         if (!response.ok) {
-            const errorBody = await response.json();
-            console.error(`Telegram API error: ${response.status}`, errorBody);
+            console.error(`Telegram API error: ${response.status}`, responseBody);
         } else {
-            console.log(`Telegram API call '${method}' successful.`);
+            console.log(`Telegram API call '${method}' successful. Response:`, responseBody);
         }
         return response;
     } catch (error) {
