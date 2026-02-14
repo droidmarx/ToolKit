@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -67,7 +68,7 @@ const MapIconButton = ({ href, title, icon }: { href: string; title: string; ico
     title={title}
     className="group relative flex items-center justify-center w-16 h-16 rounded-full bg-background border border-white/10 transition-all duration-300 hover:bg-primary hover:border-primary hover:scale-110"
   >
-    <div className="text-accent group-hover:text-primary-foreground transition-colors">
+    <div className="text-green-400 group-hover:text-primary-foreground transition-colors">
       {icon}
     </div>
   </a>
@@ -144,30 +145,51 @@ export default function Home() {
 
   async function fetchIpInfo() {
     setIpInfoLoading(true);
-    try {
-      const ipv4Response = await fetch('https://api.ipify.org?format=json');
-      const ipv4Data = await ipv4Response.json();
-      const ipv4 = ipv4Data.ip;
-      
-      let ipv6 = 'Não disponível';
+    
+    const [ipv4Result, ipv6Result] = await Promise.allSettled([
+      fetch('https://api.ipify.org?format=json'),
+      fetch('https://api64.ipify.org?format=json')
+    ]);
+
+    let ipv4 = 'Erro';
+    if (ipv4Result.status === 'fulfilled' && ipv4Result.value.ok) {
       try {
-        const ipv6Response = await fetch('https://api64.ipify.org?format=json');
-        const ipv6Data = await ipv6Response.json();
-        ipv6 = ipv6Data.ip;
+        const data = await ipv4Result.value.json();
+        ipv4 = data.ip;
       } catch (e) {
-        // Silently fail if no IPv6
+        console.error("Failed to parse IPv4 response", e);
       }
-
-      const geoResponse = await fetch(`https://ipapi.co/${ipv4}/json/`);
-      const geoData = await geoResponse.json();
-      const location = `${geoData.city || 'N/A'}, ${geoData.region || 'N/A'}, ${geoData.country_name || 'N/A'}`;
-
-      setIpInfo({ ipv4, ipv6, location });
-    } catch (err) {
-      setIpInfo({ ipv4: 'Erro', ipv6: 'Erro', location: 'Não foi possível carregar dados' });
-    } finally {
-      setIpInfoLoading(false);
     }
+
+    let ipv6 = 'Não disponível';
+    if (ipv6Result.status === 'fulfilled' && ipv6Result.value.ok) {
+       try {
+        const data = await ipv6Result.value.json();
+        ipv6 = data.ip;
+      } catch (e) {
+        console.error("Failed to parse IPv6 response", e);
+      }
+    }
+
+    let location = 'Erro';
+    if (ipv4 !== 'Erro') {
+      try {
+        const geoResponse = await fetch(`https://ipapi.co/${ipv4}/json/`);
+        if (geoResponse.ok) {
+          const geoData = await geoResponse.json();
+          location = `${geoData.city || 'N/A'}, ${geoData.region || 'N/A'}, ${geoData.country_name || 'N/A'}`;
+        } else {
+          location = 'Não foi possível obter';
+        }
+      } catch (e) {
+        location = 'Não foi possível obter';
+      }
+    } else {
+      location = 'Não foi possível obter (sem IPv4)';
+    }
+
+    setIpInfo({ ipv4, ipv6, location });
+    setIpInfoLoading(false);
   }
 
   const handleOpenSpeedtest = () => {
@@ -215,7 +237,7 @@ export default function Home() {
               {/* Map Section */}
               <div className="col-span-2 sm:col-span-3 md:col-span-4 p-4 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm flex flex-col md:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <Map size={24} className="text-accent" />
+                  <Map size={24} className="text-green-400" />
                   <h3 className="font-medium">Mapas CTO</h3>
                 </div>
                 <div className="flex items-center justify-center gap-4">
@@ -284,3 +306,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
