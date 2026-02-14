@@ -7,7 +7,10 @@ const BASE_URL = `https://api.telegram.org/bot${TOKEN}`;
 
 const MATERIAL_FORM_URL = 'https://forms.gle/UEqhzzLM3TGXgTbE6';
 const GOOGLE_MAPS_URL = 'https://goo.gl/maps/88VJ2ZpSiy4F2Qas7?g_st=aw';
-const QR_CODE_IMAGE_URL = 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=https://top-drab.vercel.app/';
+const SITE_URL_TOP_DRAB = 'https://top-drab.vercel.app/';
+const QR_CODE_IMAGE_URL = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${SITE_URL_TOP_DRAB}`;
+const SITE_URL_TOOL_KIT_ONE = 'https://tool-kit-one.vercel.app/';
+
 
 async function sendApiRequest(method: string, body: object) {
     const url = `${BASE_URL}/${method}`;
@@ -55,7 +58,7 @@ export async function POST(req: Request) {
                 case '/start':
                     await sendApiRequest('sendMessage', {
                         chat_id: chatId,
-                        text: 'Olá! Sou seu bot de assistência CTO. Use os seguintes comandos:\n\n/command1 - Link para pedido de material.\n/command2 - Link para o Google Maps.\n/command3 - Receber a imagem do QR Code.',
+                        text: 'Olá! Sou seu bot de assistência CTO. Use os seguintes comandos:\n\n/command1 - Link para pedido de material.\n/command2 - Link para o Google Maps.\n/command3 - Receber QR Code e link do site.\n/command4 - Receber link do painel de ferramentas.',
                     });
                     break;
                 
@@ -77,7 +80,14 @@ export async function POST(req: Request) {
                     await sendApiRequest('sendPhoto', {
                         chat_id: chatId,
                         photo: QR_CODE_IMAGE_URL,
-                        caption: 'Aqui está o QR Code solicitado.',
+                        caption: `Aqui está o QR Code e o link do site: ${SITE_URL_TOP_DRAB}`,
+                    });
+                    break;
+
+                case '/command4':
+                    await sendApiRequest('sendMessage', {
+                        chat_id: chatId,
+                        text: `Aqui está o link do painel de ferramentas: ${SITE_URL_TOOL_KIT_ONE}`,
                     });
                     break;
 
