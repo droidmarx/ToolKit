@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogOverlay, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogOverlay, DialogClose, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import Image from 'next/image';
 import { 
@@ -146,43 +146,32 @@ export default function Home() {
   async function fetchIpInfo() {
     setIpInfoLoading(true);
     
-    const [ipv4Result, ipv6Result] = await Promise.allSettled([
-      fetch('https://api.ipify.org?format=json'),
-      fetch('https://api64.ipify.org?format=json')
-    ]);
-
-    let ipv4 = 'Erro';
-    if (ipv4Result.status === 'fulfilled' && ipv4Result.value.ok) {
+    const fetchWithFallback = async (url: string, fallback: string) => {
       try {
-        const data = await ipv4Result.value.json();
-        ipv4 = data.ip;
+        const response = await fetch(url);
+        if (response.ok) {
+          const data = await response.json();
+          return data.ip || fallback;
+        }
       } catch (e) {
-        console.error("Failed to parse IPv4 response", e);
+        console.error(`Failed to fetch from ${url}`, e);
       }
-    }
+      return fallback;
+    };
+    
+    const ipv4 = await fetchWithFallback('https://api.ipify.org?format=json', 'Erro');
+    const ipv6 = await fetchWithFallback('https://api64.ipify.org?format=json', 'Não disponível');
 
-    let ipv6 = 'Não disponível';
-    if (ipv6Result.status === 'fulfilled' && ipv6Result.value.ok) {
-       try {
-        const data = await ipv6Result.value.json();
-        ipv6 = data.ip;
-      } catch (e) {
-        console.error("Failed to parse IPv6 response", e);
-      }
-    }
-
-    let location = 'Erro';
+    let location = 'Não foi possível obter';
     if (ipv4 !== 'Erro') {
       try {
         const geoResponse = await fetch(`https://ipapi.co/${ipv4}/json/`);
         if (geoResponse.ok) {
           const geoData = await geoResponse.json();
           location = `${geoData.city || 'N/A'}, ${geoData.region || 'N/A'}, ${geoData.country_name || 'N/A'}`;
-        } else {
-          location = 'Não foi possível obter';
         }
       } catch (e) {
-        location = 'Não foi possível obter';
+        console.error(`Failed to fetch geo location for ${ipv4}`, e);
       }
     } else {
       location = 'Não foi possível obter (sem IPv4)';
@@ -256,6 +245,8 @@ export default function Home() {
       <Dialog open={indaiaModalOpen} onOpenChange={setIndaiaModalOpen}>
         <DialogOverlay className="bg-black/60 backdrop-blur-sm" />
         <DialogContent className="w-[95vw] max-w-5xl h-[90vh] bg-card/80 backdrop-blur-xl border-white/10 p-2 flex flex-col animate-zoom-in">
+          <DialogTitle className="sr-only">Sistema IndaiaFibra</DialogTitle>
+          <DialogDescription className="sr-only">Visualização do sistema IndaiaFibra em um iframe.</DialogDescription>
           <iframe className="w-full h-full border-none rounded-md flex-grow" src="https://gchat.indaiafibra.com.br/#/login" title="Sistema IndaiaFibra"></iframe>
           <Button asChild className="mt-2 w-full">
             <a href="https://gchat.indaiafibra.com.br/#/login" target="_blank" rel="noopener noreferrer">
@@ -271,6 +262,8 @@ export default function Home() {
       <Dialog open={speedtestModalOpen} onOpenChange={setSpeedtestModalOpen}>
         <DialogOverlay className="bg-black/60 backdrop-blur-sm" />
         <DialogContent className="w-[95vw] max-w-5xl h-[90vh] bg-card/80 backdrop-blur-xl border-white/10 p-2 flex flex-col animate-zoom-in">
+            <DialogTitle className="sr-only">Speed Test</DialogTitle>
+            <DialogDescription className="sr-only">Modal com teste de velocidade de internet e informações de IP.</DialogDescription>
             <div className="text-center p-3 bg-black/20 rounded-md mb-2 text-xs border border-white/10">
               {ipInfoLoading ? (
                 <p className="text-accent animate-pulse">Carregando informações de rede...</p>
@@ -297,6 +290,8 @@ export default function Home() {
       <Dialog open={qrModalOpen} onOpenChange={setQrModalOpen}>
         <DialogOverlay className="bg-black/60 backdrop-blur-sm" />
         <DialogContent className="p-0 bg-transparent border-none shadow-none w-auto animate-zoom-in flex items-center justify-center">
+            <DialogTitle className="sr-only">QR Code</DialogTitle>
+            <DialogDescription className="sr-only">Exibição do QR Code para o aplicativo.</DialogDescription>
             {qrCodeImage && <Image src={qrCodeImage.imageUrl} alt="QR Code" width={400} height={400} className="max-w-full h-auto rounded-lg border-4 border-white shadow-2xl shadow-primary/50" />}
              <DialogClose className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 !text-background bg-foreground rounded-full p-1">
                 <X/>
@@ -306,5 +301,7 @@ export default function Home() {
     </div>
   );
 }
+
+    
 
     
