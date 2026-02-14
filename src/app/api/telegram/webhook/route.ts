@@ -12,7 +12,7 @@ const MOCK_API_URL = 'https://699107e56279728b0153afac.mockapi.io/Telegran';
 
 type User = {
     id: string;
-    chatId: string;
+    chatId: number;
     notificationsEnabled: boolean;
 };
 
@@ -68,7 +68,7 @@ export async function POST(req: Request) {
                             await fetch(MOCK_API_URL, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ chatId: String(chatId), notificationsEnabled: true }),
+                                body: JSON.stringify({ chatId: chatId, notificationsEnabled: true }),
                             });
                         }
                     } catch (apiError) {

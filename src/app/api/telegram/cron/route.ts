@@ -6,7 +6,7 @@ const MOCK_API_URL = 'https://699107e56279728b0153afac.mockapi.io/Telegran';
 
 type User = {
     id: string;
-    chatId: string;
+    chatId: number;
     notificationsEnabled: boolean;
 };
 
