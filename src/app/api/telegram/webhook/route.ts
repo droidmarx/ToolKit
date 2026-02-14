@@ -7,7 +7,7 @@ const BASE_URL = `https://api.telegram.org/bot${TOKEN}`;
 
 const MATERIAL_FORM_URL = 'https://forms.gle/UEqhzzLM3TGXgTbE6';
 const GOOGLE_MAPS_URL = 'https://goo.gl/maps/88VJ2ZpSiy4F2Qas7?g_st=aw';
-const QR_CODE_IMAGE_URL = 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=https://tool-kit-one.vercel.app/';
+const QR_CODE_IMAGE_URL = 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=https://top-drab.vercel.app/';
 
 async function sendApiRequest(method: string, body: object) {
     const url = `${BASE_URL}/${method}`;
