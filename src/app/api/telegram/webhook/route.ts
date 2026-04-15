@@ -8,6 +8,7 @@ const GOOGLE_MAPS_URL = 'https://goo.gl/maps/88VJ2ZpSiy4F2Qas7?g_st=aw';
 const SITE_URL_TOP_DRAB = 'https://top-drab.vercel.app/';
 const QR_CODE_IMAGE_URL = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${SITE_URL_TOP_DRAB}`;
 const SITE_URL_TOOL_KIT_ONE = 'https://tool-kit-one.vercel.app/';
+const SITE_URL_GPON_EPON = 'https://gpon-epon.vercel.app/'; // ✅ NOVO LINK
 const MOCK_API_URL = 'https://699107e56279728b0153afac.mockapi.io/Telegran';
 
 type User = {
@@ -38,7 +39,6 @@ async function findUserByChatId(chatId: number): Promise<User | null> {
         return null;
     }
 }
-
 
 export async function POST(req: Request) {
     console.log('Webhook received a request.');
@@ -96,7 +96,7 @@ export async function POST(req: Request) {
                     
                     await sendTelegramApiRequest('sendMessage', {
                         chat_id: chatId,
-                        text: 'Olá! Sou seu bot de assistência CTO. Use os seguintes comandos:\n\n/command1 - Link para pedido de material.\n/command2 - Link para o Google Maps.\n/command3 - Receber QR Code e link do site.\n/command4 - Receber link do painel de ferramentas.\n/command5 - Ativar/Desativar avisos semanais.',
+                        text: 'Olá! Sou seu bot de assistência CTO. Use os seguintes comandos:\n\n/command1 - Link para pedido de material.\n/command2 - Link para o Google Maps.\n/command3 - Receber QR Code e link do site.\n/command4 - Receber link do painel de ferramentas.\n/command5 - Ativar/Desativar avisos semanais.\n/command6 - Link GPON/EPON.', // ✅ atualizado
                     });
                     break;
                 
@@ -173,6 +173,14 @@ export async function POST(req: Request) {
                             text: 'Ocorreu um erro de comunicação ao atualizar suas preferências. Tente novamente.',
                         });
                     }
+                    break;
+
+                // ✅ NOVO COMANDO
+                case '/command6':
+                    await sendTelegramApiRequest('sendMessage', {
+                        chat_id: chatId,
+                        text: `Aqui está o link GPON/EPON: ${SITE_URL_GPON_EPON}`,
+                    });
                     break;
                 
                 default:
