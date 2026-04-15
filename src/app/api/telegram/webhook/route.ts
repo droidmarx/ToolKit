@@ -15,7 +15,7 @@ type User = {
     id: string;
     chatId: number;
     notificationsEnabled: boolean;
-    notificationDay?: number; // 0 = domingo ... 6 = sábado
+    notificationDay?: number;
 };
 
 async function findUserByChatId(chatId: number): Promise<User | null> {
@@ -38,7 +38,7 @@ export async function POST(req: Request) {
     try {
         const body = await req.json();
 
-        // 📍 RECEBE LOCALIZAÇÃO
+        // 📍 LOCALIZAÇÃO
         if (body.message && body.message.location) {
             const { chat } = body.message;
             const { latitude, longitude } = body.message.location;
@@ -66,37 +66,11 @@ export async function POST(req: Request) {
                                 [{ text: '🗺 Maps', web_app: { url: GOOGLE_MAPS_URL } }],
                                 [{ text: '📲 Painel', web_app: { url: SITE_URL_TOOL_KIT_ONE } }],
                                 [{ text: '🧠 GPON/EPON', web_app: { url: SITE_URL_GPON_EPON } }],
+                                [{ text: '📷 QR Code', callback_data: 'qrcode' }],
                                 [{ text: '📍 Localização', callback_data: 'location' }],
                                 [{ text: '🔔 Notificações', callback_data: 'choose_day' }],
                                 [{ text: '❌ Desativar Notificações', callback_data: 'disable_notifications' }],
                             ],
-                        },
-                    });
-                    break;
-
-                case '/command3':
-                    await sendTelegramApiRequest('sendPhoto', {
-                        chat_id: chatId,
-                        photo: QR_CODE_IMAGE_URL,
-                        caption: SITE_URL_TOP_DRAB,
-                    });
-                    break;
-
-                case '/command7':
-                    await sendTelegramApiRequest('sendMessage', {
-                        chat_id: chatId,
-                        text: 'Clique abaixo para enviar sua localização 📍',
-                        reply_markup: {
-                            keyboard: [
-                                [
-                                    {
-                                        text: '📍 Compartilhar localização',
-                                        request_location: true,
-                                    },
-                                ],
-                            ],
-                            resize_keyboard: true,
-                            one_time_keyboard: true,
                         },
                     });
                     break;
@@ -110,10 +84,19 @@ export async function POST(req: Request) {
             }
         }
 
-        // 🔘 CALLBACK BUTTONS
+        // 🔘 CALLBACKS
         if (body.callback_query) {
             const { data, message } = body.callback_query;
             const chatId = message.chat.id;
+
+            // 📷 QR CODE
+            if (data === 'qrcode') {
+                await sendTelegramApiRequest('sendPhoto', {
+                    chat_id: chatId,
+                    photo: QR_CODE_IMAGE_URL,
+                    caption: SITE_URL_TOP_DRAB,
+                });
+            }
 
             // 📍 LOCALIZAÇÃO
             if (data === 'location') {
@@ -186,13 +169,7 @@ export async function POST(req: Request) {
                 });
 
                 const dias = [
-                    'Domingo',
-                    'Segunda',
-                    'Terça',
-                    'Quarta',
-                    'Quinta',
-                    'Sexta',
-                    'Sábado',
+                    'Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'
                 ];
 
                 await sendTelegramApiRequest('sendMessage', {
@@ -221,6 +198,7 @@ export async function POST(req: Request) {
                 });
             }
         }
+
     } catch (error) {
         console.error(error);
     }
