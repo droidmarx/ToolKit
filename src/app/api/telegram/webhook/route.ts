@@ -37,14 +37,14 @@ export async function POST(req: Request) {
     try {
         const body = await req.json();
 
-        // 📍 RECEBE LOCALIZAÇÃO E RESPONDE EM FORMATO LIMPO
+        // 📍 LOCALIZAÇÃO
         if (body.message && body.message.location) {
             const { chat } = body.message;
             const { latitude, longitude } = body.message.location;
 
             await sendTelegramApiRequest('sendMessage', {
                 chat_id: chat.id,
-                text: `${latitude}, ${longitude}`, // ✅ FORMATO LIMPO
+                text: `${latitude}, ${longitude}`,
             });
         }
 
@@ -57,29 +57,17 @@ export async function POST(req: Request) {
                 case '/start':
                     await sendTelegramApiRequest('sendMessage', {
                         chat_id: chatId,
-                        text: `Olá! Comandos disponíveis:
-
-/command1 - Material
-/command2 - Maps
-/command3 - QR Code
-/command4 - Painel
-/command5 - Notificações
-/command6 - GPON/EPON
-/command7 - Sua localização`,
-                    });
-                    break;
-
-                case '/command1':
-                    await sendTelegramApiRequest('sendMessage', {
-                        chat_id: chatId,
-                        text: MATERIAL_FORM_URL,
-                    });
-                    break;
-
-                case '/command2':
-                    await sendTelegramApiRequest('sendMessage', {
-                        chat_id: chatId,
-                        text: GOOGLE_MAPS_URL,
+                        text: `Escolha uma opção abaixo 👇`,
+                        reply_markup: {
+                            inline_keyboard: [
+                                [{ text: '📄 Material', web_app: { url: MATERIAL_FORM_URL } }],
+                                [{ text: '🗺 Maps', web_app: { url: GOOGLE_MAPS_URL } }],
+                                [{ text: '📲 Painel', web_app: { url: SITE_URL_TOOL_KIT_ONE } }],
+                                [{ text: '🧠 GPON/EPON', web_app: { url: SITE_URL_GPON_EPON } }],
+                                [{ text: '📍 Capturar localização', callback_data: 'location' }],
+                                [{ text: '🔔 Notificações', callback_data: 'notifications' }],
+                            ],
+                        },
                     });
                     break;
 
@@ -91,50 +79,10 @@ export async function POST(req: Request) {
                     });
                     break;
 
-                case '/command4':
-                    await sendTelegramApiRequest('sendMessage', {
-                        chat_id: chatId,
-                        text: SITE_URL_TOOL_KIT_ONE,
-                    });
-                    break;
-
-                case '/command5':
-                    const user = await findUserByChatId(chatId);
-
-                    if (!user) {
-                        await sendTelegramApiRequest('sendMessage', {
-                            chat_id: chatId,
-                            text: 'Use /start primeiro.',
-                        });
-                        break;
-                    }
-
-                    const newStatus = !user.notificationsEnabled;
-
-                    await fetch(`${MOCK_API_URL}/${user.id}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ notificationsEnabled: newStatus }),
-                    });
-
-                    await sendTelegramApiRequest('sendMessage', {
-                        chat_id: chatId,
-                        text: `Notificações ${newStatus ? 'ATIVADAS' : 'DESATIVADAS'}`,
-                    });
-                    break;
-
-                case '/command6':
-                    await sendTelegramApiRequest('sendMessage', {
-                        chat_id: chatId,
-                        text: SITE_URL_GPON_EPON,
-                    });
-                    break;
-
-                // ✅ COMANDO DE LOCALIZAÇÃO
                 case '/command7':
                     await sendTelegramApiRequest('sendMessage', {
                         chat_id: chatId,
-                        text: 'Clique no botão abaixo para compartilhar sua localização 📍',
+                        text: 'Clique abaixo para enviar sua localização 📍',
                         reply_markup: {
                             keyboard: [
                                 [
@@ -153,9 +101,59 @@ export async function POST(req: Request) {
                 default:
                     await sendTelegramApiRequest('sendMessage', {
                         chat_id: chatId,
-                        text: 'Comando não reconhecido',
+                        text: 'Use /start',
                     });
                     break;
+            }
+        }
+
+        // CALLBACK BUTTONS
+        if (body.callback_query) {
+            const { data, message } = body.callback_query;
+            const chatId = message.chat.id;
+
+            if (data === 'location') {
+                await sendTelegramApiRequest('sendMessage', {
+                    chat_id: chatId,
+                    text: 'Clique abaixo para enviar sua localização 📍',
+                    reply_markup: {
+                        keyboard: [
+                            [
+                                {
+                                    text: '📍 Compartilhar localização',
+                                    request_location: true,
+                                },
+                            ],
+                        ],
+                        resize_keyboard: true,
+                        one_time_keyboard: true,
+                    },
+                });
+            }
+
+            if (data === 'notifications') {
+                const user = await findUserByChatId(chatId);
+
+                if (!user) {
+                    await sendTelegramApiRequest('sendMessage', {
+                        chat_id: chatId,
+                        text: 'Use /start primeiro.',
+                    });
+                    return;
+                }
+
+                const newStatus = !user.notificationsEnabled;
+
+                await fetch(`${MOCK_API_URL}/${user.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ notificationsEnabled: newStatus }),
+                });
+
+                await sendTelegramApiRequest('sendMessage', {
+                    chat_id: chatId,
+                    text: `Notificações ${newStatus ? 'ATIVADAS' : 'DESATIVADAS'}`,
+                });
             }
         }
     } catch (error) {
