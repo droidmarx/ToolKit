@@ -18,6 +18,10 @@ type User = {
     notificationDay?: number;
 };
 
+const dias = [
+    'Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'
+];
+
 async function findUserByChatId(chatId: number): Promise<User | null> {
     const res = await fetch(`${MOCK_API_URL}?chatId=${chatId}`);
     if (!res.ok) return null;
@@ -25,7 +29,7 @@ async function findUserByChatId(chatId: number): Promise<User | null> {
     return users.length > 0 ? users[0] : null;
 }
 
-// 🎯 MENU FIXO (PADRÃO APP)
+// MENU FIXO
 async function sendMainMenu(chatId: number) {
     await sendTelegramApiRequest('sendMessage', {
         chat_id: chatId,
@@ -62,17 +66,15 @@ export async function POST(req: Request) {
             });
         }
 
-        // 💬 TEXTO (MENU)
+        // 💬 TEXTO
         if (body.message?.text) {
             const { chat, text } = body.message;
             const chatId = chat.id;
 
-            // START
             if (text === '/start') {
                 await sendMainMenu(chatId);
             }
 
-            // MATERIAL
             if (text === '📄 Material') {
                 await sendTelegramApiRequest('sendMessage', {
                     chat_id: chatId,
@@ -80,7 +82,6 @@ export async function POST(req: Request) {
                 });
             }
 
-            // MAPS
             if (text === '🗺 Maps') {
                 await sendTelegramApiRequest('sendMessage', {
                     chat_id: chatId,
@@ -88,7 +89,6 @@ export async function POST(req: Request) {
                 });
             }
 
-            // PAINEL (WEBAPP)
             if (text === '📲 Painel') {
                 await sendTelegramApiRequest('sendMessage', {
                     chat_id: chatId,
@@ -101,7 +101,6 @@ export async function POST(req: Request) {
                 });
             }
 
-            // GPON
             if (text === '🧠 GPON/EPON') {
                 await sendTelegramApiRequest('sendMessage', {
                     chat_id: chatId,
@@ -114,7 +113,6 @@ export async function POST(req: Request) {
                 });
             }
 
-            // QR CODE
             if (text === '📷 QR Code') {
                 await sendTelegramApiRequest('sendPhoto', {
                     chat_id: chatId,
@@ -123,7 +121,6 @@ export async function POST(req: Request) {
                 });
             }
 
-            // LOCALIZAÇÃO
             if (text === '📍 Localização') {
                 await sendTelegramApiRequest('sendMessage', {
                     chat_id: chatId,
@@ -138,11 +135,19 @@ export async function POST(req: Request) {
                 });
             }
 
-            // 🔔 NOTIFICAÇÕES (FLUXO PROFISSIONAL)
+            // 🔔 NOTIFICAÇÕES COM STATUS
             if (text === '🔔 Notificações') {
+                const user = await findUserByChatId(chatId);
+
+                let statusMsg = '⚠️ Você ainda não configurou';
+
+                if (user?.notificationsEnabled && user.notificationDay !== undefined) {
+                    statusMsg = `✅ Você configurou para ${dias[user.notificationDay]}`;
+                }
+
                 await sendTelegramApiRequest('sendMessage', {
                     chat_id: chatId,
-                    text: 'Configurar notificações 📅',
+                    text: `Configurar notificações 📅\n\n${statusMsg}`,
                     reply_markup: {
                         inline_keyboard: [
                             [
@@ -177,7 +182,6 @@ export async function POST(req: Request) {
             const user = await findUserByChatId(chatId);
             if (!user) return;
 
-            // SALVAR DIA
             if (data.startsWith('day_')) {
                 const day = Number(data.split('_')[1]);
 
@@ -190,15 +194,12 @@ export async function POST(req: Request) {
                     }),
                 });
 
-                const dias = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
-
                 await sendTelegramApiRequest('sendMessage', {
                     chat_id: chatId,
                     text: `✅ Notificação ativa para ${dias[day]}`,
                 });
             }
 
-            // DESATIVAR
             if (data === 'disable_notifications') {
                 await fetch(`${MOCK_API_URL}/${user.id}`, {
                     method: 'PUT',
