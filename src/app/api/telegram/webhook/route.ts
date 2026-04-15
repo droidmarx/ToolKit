@@ -37,14 +37,14 @@ export async function POST(req: Request) {
     try {
         const body = await req.json();
 
-        // 📍 CASO USUÁRIO ENVIE LOCALIZAÇÃO
+        // 📍 RECEBE LOCALIZAÇÃO E RESPONDE EM FORMATO LIMPO
         if (body.message && body.message.location) {
             const { chat } = body.message;
             const { latitude, longitude } = body.message.location;
 
             await sendTelegramApiRequest('sendMessage', {
                 chat_id: chat.id,
-                text: `📍 Sua localização:\nLatitude: ${latitude}\nLongitude: ${longitude}`,
+                text: `${latitude}, ${longitude}`, // ✅ FORMATO LIMPO
             });
         }
 
@@ -100,6 +100,7 @@ export async function POST(req: Request) {
 
                 case '/command5':
                     const user = await findUserByChatId(chatId);
+
                     if (!user) {
                         await sendTelegramApiRequest('sendMessage', {
                             chat_id: chatId,
@@ -129,7 +130,7 @@ export async function POST(req: Request) {
                     });
                     break;
 
-                // ✅ NOVO COMANDO DE LOCALIZAÇÃO
+                // ✅ COMANDO DE LOCALIZAÇÃO
                 case '/command7':
                     await sendTelegramApiRequest('sendMessage', {
                         chat_id: chatId,
