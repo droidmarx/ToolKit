@@ -15,6 +15,7 @@ type User = {
     id: string;
     chatId: number;
     notificationsEnabled: boolean;
+    notificationDay?: number; // 0 = domingo ... 6 = sábado
 };
 
 async function findUserByChatId(chatId: number): Promise<User | null> {
@@ -37,7 +38,7 @@ export async function POST(req: Request) {
     try {
         const body = await req.json();
 
-        // 📍 LOCALIZAÇÃO
+        // 📍 RECEBE LOCALIZAÇÃO
         if (body.message && body.message.location) {
             const { chat } = body.message;
             const { latitude, longitude } = body.message.location;
@@ -48,6 +49,7 @@ export async function POST(req: Request) {
             });
         }
 
+        // 💬 COMANDOS
         if (body.message && body.message.text) {
             const { chat, text } = body.message;
             const chatId = chat.id;
@@ -57,15 +59,16 @@ export async function POST(req: Request) {
                 case '/start':
                     await sendTelegramApiRequest('sendMessage', {
                         chat_id: chatId,
-                        text: `Escolha uma opção abaixo 👇`,
+                        text: `Escolha uma opção 👇`,
                         reply_markup: {
                             inline_keyboard: [
                                 [{ text: '📄 Material', web_app: { url: MATERIAL_FORM_URL } }],
                                 [{ text: '🗺 Maps', web_app: { url: GOOGLE_MAPS_URL } }],
                                 [{ text: '📲 Painel', web_app: { url: SITE_URL_TOOL_KIT_ONE } }],
                                 [{ text: '🧠 GPON/EPON', web_app: { url: SITE_URL_GPON_EPON } }],
-                                [{ text: '📍 Capturar localização', callback_data: 'location' }],
-                                [{ text: '🔔 Notificações', callback_data: 'notifications' }],
+                                [{ text: '📍 Localização', callback_data: 'location' }],
+                                [{ text: '🔔 Notificações', callback_data: 'choose_day' }],
+                                [{ text: '❌ Desativar Notificações', callback_data: 'disable_notifications' }],
                             ],
                         },
                     });
@@ -107,11 +110,12 @@ export async function POST(req: Request) {
             }
         }
 
-        // CALLBACK BUTTONS
+        // 🔘 CALLBACK BUTTONS
         if (body.callback_query) {
             const { data, message } = body.callback_query;
             const chatId = message.chat.id;
 
+            // 📍 LOCALIZAÇÃO
             if (data === 'location') {
                 await sendTelegramApiRequest('sendMessage', {
                     chat_id: chatId,
@@ -131,7 +135,37 @@ export async function POST(req: Request) {
                 });
             }
 
-            if (data === 'notifications') {
+            // 🔔 ESCOLHER DIA
+            if (data === 'choose_day') {
+                await sendTelegramApiRequest('sendMessage', {
+                    chat_id: chatId,
+                    text: 'Escolha o dia da notificação 📅',
+                    reply_markup: {
+                        inline_keyboard: [
+                            [
+                                { text: 'Segunda', callback_data: 'day_1' },
+                                { text: 'Terça', callback_data: 'day_2' },
+                            ],
+                            [
+                                { text: 'Quarta', callback_data: 'day_3' },
+                                { text: 'Quinta', callback_data: 'day_4' },
+                            ],
+                            [
+                                { text: 'Sexta', callback_data: 'day_5' },
+                                { text: 'Sábado', callback_data: 'day_6' },
+                            ],
+                            [
+                                { text: 'Domingo', callback_data: 'day_0' },
+                            ],
+                        ],
+                    },
+                });
+            }
+
+            // 💾 SALVAR DIA
+            if (data.startsWith('day_')) {
+                const day = Number(data.split('_')[1]);
+
                 const user = await findUserByChatId(chatId);
 
                 if (!user) {
@@ -142,17 +176,48 @@ export async function POST(req: Request) {
                     return;
                 }
 
-                const newStatus = !user.notificationsEnabled;
+                await fetch(`${MOCK_API_URL}/${user.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        notificationDay: day,
+                        notificationsEnabled: true,
+                    }),
+                });
+
+                const dias = [
+                    'Domingo',
+                    'Segunda',
+                    'Terça',
+                    'Quarta',
+                    'Quinta',
+                    'Sexta',
+                    'Sábado',
+                ];
+
+                await sendTelegramApiRequest('sendMessage', {
+                    chat_id: chatId,
+                    text: `✅ Notificação ativada para ${dias[day]}`,
+                });
+            }
+
+            // ❌ DESATIVAR
+            if (data === 'disable_notifications') {
+                const user = await findUserByChatId(chatId);
+
+                if (!user) return;
 
                 await fetch(`${MOCK_API_URL}/${user.id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ notificationsEnabled: newStatus }),
+                    body: JSON.stringify({
+                        notificationsEnabled: false,
+                    }),
                 });
 
                 await sendTelegramApiRequest('sendMessage', {
                     chat_id: chatId,
-                    text: `Notificações ${newStatus ? 'ATIVADAS' : 'DESATIVADAS'}`,
+                    text: '❌ Notificações desativadas',
                 });
             }
         }
