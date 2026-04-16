@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel de Notificações</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:'Inter'; }
+
+body {
+    background:#0f172a;
+    color:#e2e8f0;
+    padding:20px;
+}
+
+.container { max-width:1100px; margin:auto; }
+
+h1 { margin-bottom:20px; }
+
+.card {
+    background:#1e293b;
+    border-radius:16px;
+    padding:20px;
+    margin-bottom:15px;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    transition:.2s;
+}
+
+.card:hover {
+    transform:translateY(-3px);
+    background:#273549;
+}
+
+.row {
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+}
+
+.badge { padding:5px 10px; border-radius:8px; font-size:12px; }
+
+.active { background:#22c55e; }
+.inactive { background:#ef4444; }
+
+select, button, input {
+    padding:8px;
+    border-radius:8px;
+    border:none;
+}
+
+input {
+    width:100%;
+    background:#0f172a;
+    color:#fff;
+}
+
+button {
+    background:#3b82f6;
+    color:white;
+    cursor:pointer;
+}
+
+button:hover { background:#2563eb; }
+
+.toggle.on { background:#22c55e; }
+.toggle.off { background:#ef4444; }
+
+.send {
+    background:#f59e0b;
+}
+
+.send:hover {
+    background:#d97706;
+}
+
+.header {
+    display:flex;
+    justify-content:space-between;
+    margin-bottom:20px;
+}
+
+.refresh {
+    background:#22c55e;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>📊 Painel de Notificações</h1>
+        <button class="refresh" onclick="loadUsers()">🔄 Atualizar</button>
+    </div>
+
+    <div id="users"></div>
+</div>
+
+<script>
+const API = "https://699107e56279728b0153afac.mockapi.io/Telegran";
+const BOT_TOKEN = "SEU_TOKEN_AQUI";
+
+const dias = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+const horas = [8,9,10,11,12,13,14];
+
+async function loadUsers() {
+    const res = await fetch(API);
+    const users = await res.json();
+
+    const container = document.getElementById("users");
+    container.innerHTML = "";
+
+    users.forEach(user => {
+        const card = document.createElement("div");
+        card.className = "card";
+
+        const status = user.notificationsEnabled ? "active" : "inactive";
+
+        card.innerHTML = `
+            <div class="row">
+                <strong>Chat ID:</strong> ${user.chatId}
+                <span class="badge ${status}">
+                    ${user.notificationsEnabled ? "Ativo" : "Desativado"}
+                </span>
+            </div>
+
+            <div class="row">
+                <label>Dia:</label>
+                <select onchange="updateUser('${user.id}', 'notificationDay', this.value)">
+                    ${dias.map((d,i)=>`
+                        <option value="${i}" ${user.notificationDay==i?"selected":""}>${d}</option>
+                    `).join("")}
+                </select>
+
+                <label>Hora:</label>
+                <select onchange="updateUser('${user.id}', 'notificationHour', this.value)">
+                    ${horas.map(h=>`
+                        <option value="${h}" ${user.notificationHour==h?"selected":""}>${h}h</option>
+                    `).join("")}
+                </select>
+            </div>
+
+            <div class="row">
+                <button onclick="toggle('${user.id}', ${user.notificationsEnabled})"
+                    class="toggle ${user.notificationsEnabled?'on':'off'}">
+                    ${user.notificationsEnabled ? "Desativar" : "Ativar"}
+                </button>
+
+                <button onclick="deleteUser('${user.id}')">
+                    🗑 Excluir
+                </button>
+            </div>
+
+            <div>
+                <input id="msg-${user.id}" placeholder="Digite uma mensagem para enviar..." />
+            </div>
+
+            <div class="row">
+                <button class="send" onclick="sendMessage('${user.chatId}', '${user.id}')">
+                    📤 Enviar mensagem
+                </button>
+            </div>
+        `;
+
+        container.appendChild(card);
+    });
+}
+
+async function updateUser(id, field, value) {
+    await fetch(`${API}/${id}`, {
+        method:"PUT",
+        headers:{ "Content-Type":"application/json" },
+        body:JSON.stringify({
+            [field]: Number(value)
+        })
+    });
+
+    loadUsers();
+}
+
+async function toggle(id, current) {
+    await fetch(`${API}/${id}`, {
+        method:"PUT",
+        headers:{ "Content-Type":"application/json" },
+        body:JSON.stringify({
+            notificationsEnabled: !current,
+            lastNotificationSent: null
+        })
+    });
+
+    loadUsers();
+}
+
+async function deleteUser(id) {
+    if(!confirm("Excluir usuário?")) return;
+
+    await fetch(`${API}/${id}`, {
+        method:"DELETE"
+    });
+
+    loadUsers();
+}
+
+// 🚀 ENVIO MANUAL
+async function sendMessage(chatId, userId) {
+    const input = document.getElementById(`msg-${userId}`);
+    const text = input.value;
+
+    if(!text) {
+        alert("Digite uma mensagem!");
+        return;
+    }
+
+    try {
+        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+            method:"POST",
+            headers:{ "Content-Type":"application/json" },
+            body: JSON.stringify({
+                chat_id: chatId,
+                text: text
+            })
+        });
+
+        alert("Mensagem enviada 🚀");
+        input.value = "";
+
+    } catch (err) {
+        alert("Erro ao enviar");
+        console.error(err);
+    }
+}
+
+loadUsers();
+</script>
+
+</body>
+</html>
