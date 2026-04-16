@@ -1,64 +1,32 @@
-import { NextResponse } from 'next/server';
-import { sendTelegramApiRequest } from '@/lib/telegram-api';
+const now = new Date();
 
-const MATERIAL_FORM_URL = 'https://forms.gle/UEqhzzLM3TGXgTbE6';
-const MOCK_API_URL = 'https://699107e56279728b0153afac.mockapi.io/Telegran';
+// Ajuste de timezone para São Paulo
+const formatter = new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    weekday: 'short',
+    hour: 'numeric',
+    hour12: false,
+});
 
-type User = {
-    id: string;
-    chatId: number;
-    notificationsEnabled: boolean;
-    notificationDay?: number;
-    notificationHour?: number;
+// Extrai corretamente
+const parts = formatter.formatToParts(now);
+
+const hourPart = parts.find(p => p.type === 'hour');
+const weekdayPart = parts.find(p => p.type === 'weekday');
+
+const currentHour = Number(hourPart?.value);
+
+// Mapear dia da semana manualmente
+const diasMap: Record<string, number> = {
+    dom: 0,
+    seg: 1,
+    ter: 2,
+    qua: 3,
+    qui: 4,
+    sex: 5,
+    sáb: 6,
 };
 
-export async function GET() {
-    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+const currentDay = diasMap[weekdayPart?.value.toLowerCase() || 'dom'];
 
-    if (!botToken) {
-        console.error('CRON: TELEGRAM_BOT_TOKEN is not set.');
-        return NextResponse.json({ status: 'error' }, { status: 500 });
-    }
-
-    try {
-        const now = new Date();
-
-        const currentDay = now.getDay(); // 0-6
-        const currentHour = now.getHours(); // 0-23
-
-        console.log(`CRON: Rodando para dia ${currentDay} hora ${currentHour}`);
-
-        const usersResponse = await fetch(MOCK_API_URL);
-        const users: User[] = await usersResponse.json();
-
-        const filteredUsers = users.filter(user =>
-            user.notificationsEnabled &&
-            user.notificationDay === currentDay &&
-            user.notificationHour === currentHour
-        );
-
-        if (filteredUsers.length === 0) {
-            console.log('CRON: Nenhum usuário para notificar agora.');
-            return NextResponse.json({ status: 'ok' });
-        }
-
-        const message = `Organize seus materiais e faça seu pedido: ${MATERIAL_FORM_URL}`;
-
-        const sendPromises = filteredUsers.map(user =>
-            sendTelegramApiRequest('sendMessage', {
-                chat_id: user.chatId,
-                text: message,
-            })
-        );
-
-        await Promise.allSettled(sendPromises);
-
-        console.log(`CRON: Mensagens enviadas para ${filteredUsers.length} usuários`);
-
-        return NextResponse.json({ status: 'ok' });
-
-    } catch (error) {
-        console.error(error);
-        return NextResponse.json({ status: 'error' }, { status: 500 });
-    }
-}
+console.log(`CRON (SP): Dia ${currentDay} Hora ${currentHour}`);
