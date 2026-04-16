@@ -18,6 +18,8 @@ type User = {
     notificationDay?: number;
     notificationHour?: number;
     lastNotificationSent?: string;
+    latitude?: number;
+    longitude?: number;
 };
 
 const dias = [
@@ -42,7 +44,10 @@ async function sendMainMenu(chatId: number) {
                 ['📄 Material', '🗺 Maps'],
                 ['📲 Painel', '🧠 GPON/EPON'],
                 ['📷 QR Code'],
-                ['📍 Localização', '🔔 Notificações'],
+                [
+                    { text: '📍 Enviar localização', request_location: true },
+                    { text: '🔔 Notificações' }
+                ],
             ],
             resize_keyboard: true,
         },
@@ -54,7 +59,35 @@ export async function POST(req: Request) {
         const body = await req.json();
 
         // =========================
-        // TEXTO (BOTÕES DO MENU)
+        // RECEBER LOCALIZAÇÃO
+        // =========================
+        if (body.message?.location) {
+            const { chat, location } = body.message;
+            const chatId = chat.id;
+
+            const { latitude, longitude } = location;
+
+            const user = await findUserByChatId(chatId);
+
+            if (user) {
+                await fetch(`${MOCK_API_URL}/${user.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        latitude,
+                        longitude
+                    }),
+                });
+            }
+
+            await sendTelegramApiRequest('sendMessage', {
+                chat_id: chatId,
+                text: `📍 Localização recebida:\n\nLatitude: ${latitude}\nLongitude: ${longitude}`,
+            });
+        }
+
+        // =========================
+        // TEXTO (BOTÕES)
         // =========================
         if (body.message?.text) {
             const { chat, text } = body.message;
@@ -97,14 +130,6 @@ export async function POST(req: Request) {
                     chat_id: chatId,
                     photo: QR_CODE_IMAGE_URL,
                     caption: '📷 Acesse via QR Code',
-                });
-            }
-
-            if (text === '📍 Localização') {
-                await sendTelegramApiRequest('sendLocation', {
-                    chat_id: chatId,
-                    latitude: -22.9056,
-                    longitude: -47.0608,
                 });
             }
 
@@ -151,7 +176,7 @@ export async function POST(req: Request) {
         }
 
         // =========================
-        // CALLBACK (BOTÕES INLINE)
+        // CALLBACK
         // =========================
         if (body.callback_query) {
             const { data, message } = body.callback_query;
@@ -160,7 +185,6 @@ export async function POST(req: Request) {
             const user = await findUserByChatId(chatId);
             if (!user) return NextResponse.json({ status: 'ok' });
 
-            // ESCOLHER DIA
             if (data.startsWith('day_')) {
                 const day = Number(data.split('_')[1]);
 
@@ -184,7 +208,6 @@ export async function POST(req: Request) {
                 });
             }
 
-            // ESCOLHER HORA
             if (data.startsWith('hour_')) {
                 const hour = Number(data.split('_')[1]);
 
@@ -204,7 +227,6 @@ export async function POST(req: Request) {
                 });
             }
 
-            // DESATIVAR
             if (data === 'disable_notifications') {
                 await fetch(`${MOCK_API_URL}/${user.id}`, {
                     method: 'PUT',
