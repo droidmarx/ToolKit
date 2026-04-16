@@ -41,12 +41,12 @@ async function sendMainMenu(chatId: number) {
         text: '👇 Menu principal',
         reply_markup: {
             keyboard: [
-                ['📄 Pedido de Material', '🗺 Mapa de CTO'],
-                ['📲 Painel', '🧠 GPON/EPON EliasFausto'],
-                ['📷 QR Code Avaliação'],
+                ['📄 Material', '🗺 Maps'],
+                ['📲 Painel', '🧠 GPON/EPON'],
+                ['📷 QR Code'],
                 [
-                    { text: '📍 Minha Coordenada', request_location: true },
-                    { text: '🔔 Me avisar para pedir material' }
+                    { text: '📍 Enviar localização', request_location: true },
+                    { text: '🔔 Notificações' }
                 ],
             ],
             resize_keyboard: true,
@@ -59,7 +59,7 @@ export async function POST(req: Request) {
         const body = await req.json();
 
         // =========================
-        // LOCALIZAÇÃO
+        // RECEBER LOCALIZAÇÃO
         // =========================
         if (body.message?.location) {
             const { chat, location } = body.message;
@@ -87,7 +87,7 @@ export async function POST(req: Request) {
         }
 
         // =========================
-        // TEXTO
+        // TEXTO (BOTÕES)
         // =========================
         if (body.message?.text) {
             const { chat, text } = body.message;
@@ -97,14 +97,14 @@ export async function POST(req: Request) {
                 await sendMainMenu(chatId);
             }
 
-            if (text === '📄 Pedido de Material') {
+            if (text === '📄 Material') {
                 await sendTelegramApiRequest('sendMessage', {
                     chat_id: chatId,
                     text: `📄 Faça seu pedido:\n${MATERIAL_FORM_URL}`,
                 });
             }
 
-            if (text === '🗺 Mapa de CTO') {
+            if (text === '🗺 Maps') {
                 await sendTelegramApiRequest('sendMessage', {
                     chat_id: chatId,
                     text: `🗺 Localização:\n${GOOGLE_MAPS_URL}`,
@@ -118,14 +118,14 @@ export async function POST(req: Request) {
                 });
             }
 
-            if (text === '🧠 GPON/EPON EliasFausto') {
+            if (text === '🧠 GPON/EPON') {
                 await sendTelegramApiRequest('sendMessage', {
                     chat_id: chatId,
-                    text: `🧠 Ferramenta:\n${SITE_URL_GPON_EPON}`,
+                    text: `🧠 Ferramenta GPON/EPON:\n${SITE_URL_GPON_EPON}`,
                 });
             }
 
-            if (text === '📷 QR Code Avaliação') {
+            if (text === '📷 QR Code') {
                 await sendTelegramApiRequest('sendPhoto', {
                     chat_id: chatId,
                     photo: QR_CODE_IMAGE_URL,
@@ -133,7 +133,7 @@ export async function POST(req: Request) {
                 });
             }
 
-            if (text === '🔔 Me avisar para pedir material') {
+            if (text === '🔔 Notificações') {
                 const user = await findUserByChatId(chatId);
 
                 let statusMsg = '⚠️ Você ainda não configurou';
@@ -236,4 +236,16 @@ export async function POST(req: Request) {
                     }),
                 });
 
-                await sendTelegramApiRequest('send
+                await sendTelegramApiRequest('sendMessage', {
+                    chat_id: chatId,
+                    text: '❌ Notificações desativadas',
+                });
+            }
+        }
+
+    } catch (error) {
+        console.error(error);
+    }
+
+    return NextResponse.json({ status: 'ok' });
+}
