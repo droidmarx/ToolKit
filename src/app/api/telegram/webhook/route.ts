@@ -17,6 +17,7 @@ type User = {
     notificationsEnabled: boolean;
     notificationDay?: number;
     notificationHour?: number;
+    lastNotificationSent?: string;
 };
 
 const dias = [
@@ -66,7 +67,11 @@ export async function POST(req: Request) {
 
                 let statusMsg = '⚠️ Você ainda não configurou';
 
-                if (user?.notificationsEnabled && user.notificationDay !== undefined && user.notificationHour !== undefined) {
+                if (
+                    user?.notificationsEnabled &&
+                    user.notificationDay !== undefined &&
+                    user.notificationHour !== undefined
+                ) {
                     statusMsg = `✅ ${dias[user.notificationDay]} às ${user.notificationHour}h`;
                 }
 
@@ -90,6 +95,9 @@ export async function POST(req: Request) {
                             [
                                 { text: 'Domingo', callback_data: 'day_0' },
                             ],
+                            [
+                                { text: '❌ Desativar', callback_data: 'disable_notifications' }
+                            ]
                         ],
                     },
                 });
@@ -114,7 +122,6 @@ export async function POST(req: Request) {
                     body: JSON.stringify({ notificationDay: day }),
                 });
 
-                // MOSTRAR HORAS
                 await sendTelegramApiRequest('sendMessage', {
                     chat_id: chatId,
                     text: `Escolha o horário para ${dias[day]} ⏰`,
@@ -139,6 +146,7 @@ export async function POST(req: Request) {
                     body: JSON.stringify({
                         notificationHour: hour,
                         notificationsEnabled: true,
+                        lastNotificationSent: null
                     }),
                 });
 
@@ -148,6 +156,7 @@ export async function POST(req: Request) {
                 });
             }
 
+            // DESATIVAR
             if (data === 'disable_notifications') {
                 await fetch(`${MOCK_API_URL}/${user.id}`, {
                     method: 'PUT',
