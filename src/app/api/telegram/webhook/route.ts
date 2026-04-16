@@ -42,15 +42,7 @@ async function sendMainMenu(chatId: number) {
                 ['📄 Material', '🗺 Maps'],
                 ['📲 Painel', '🧠 GPON/EPON'],
                 ['📷 QR Code'],
-                [
-                    {
-                        text: '📍 Localização',
-                        request_location: true
-                    },
-                    {
-                        text: '🔔 Notificações'
-                    }
-                ],
+                ['📍 Localização', '🔔 Notificações'],
             ],
             resize_keyboard: true,
         },
@@ -61,68 +53,58 @@ export async function POST(req: Request) {
     try {
         const body = await req.json();
 
-        // ========================
-        // 📍 RECEBE LOCALIZAÇÃO
-        // ========================
-        if (body.message?.location) {
-            const { chat, location } = body.message;
-            const chatId = chat.id;
-
-            const { latitude, longitude } = location;
-
-            await sendTelegramApiRequest('sendMessage', {
-                chat_id: chatId,
-                text: `📍 Sua localização:\n\n${latitude}, ${longitude}`,
-            });
-
-            return NextResponse.json({ status: 'ok' });
-        }
-
-        // ========================
-        // 📩 MENSAGENS DE TEXTO
-        // ========================
+        // =========================
+        // TEXTO (BOTÕES DO MENU)
+        // =========================
         if (body.message?.text) {
             const { chat, text } = body.message;
             const chatId = chat.id;
 
             if (text === '/start') {
                 await sendMainMenu(chatId);
-                return;
             }
 
             if (text === '📄 Material') {
-                return await sendTelegramApiRequest('sendMessage', {
+                await sendTelegramApiRequest('sendMessage', {
                     chat_id: chatId,
                     text: `📄 Faça seu pedido:\n${MATERIAL_FORM_URL}`,
                 });
             }
 
             if (text === '🗺 Maps') {
-                return await sendTelegramApiRequest('sendMessage', {
+                await sendTelegramApiRequest('sendMessage', {
                     chat_id: chatId,
                     text: `🗺 Localização:\n${GOOGLE_MAPS_URL}`,
                 });
             }
 
             if (text === '📲 Painel') {
-                return await sendTelegramApiRequest('sendMessage', {
+                await sendTelegramApiRequest('sendMessage', {
                     chat_id: chatId,
                     text: `📲 Acesse o painel:\n${SITE_URL_TOOL_KIT_ONE}`,
                 });
             }
 
             if (text === '🧠 GPON/EPON') {
-                return await sendTelegramApiRequest('sendMessage', {
+                await sendTelegramApiRequest('sendMessage', {
                     chat_id: chatId,
-                    text: `🧠 Acesse:\n${SITE_URL_GPON_EPON}`,
+                    text: `🧠 Ferramenta GPON/EPON:\n${SITE_URL_GPON_EPON}`,
                 });
             }
 
             if (text === '📷 QR Code') {
-                return await sendTelegramApiRequest('sendPhoto', {
+                await sendTelegramApiRequest('sendPhoto', {
                     chat_id: chatId,
                     photo: QR_CODE_IMAGE_URL,
-                    caption: '📷 QR Code do sistema',
+                    caption: '📷 Acesse via QR Code',
+                });
+            }
+
+            if (text === '📍 Localização') {
+                await sendTelegramApiRequest('sendLocation', {
+                    chat_id: chatId,
+                    latitude: -22.9056,
+                    longitude: -47.0608,
                 });
             }
 
@@ -139,7 +121,7 @@ export async function POST(req: Request) {
                     statusMsg = `✅ ${dias[user.notificationDay]} às ${user.notificationHour}h`;
                 }
 
-                return await sendTelegramApiRequest('sendMessage', {
+                await sendTelegramApiRequest('sendMessage', {
                     chat_id: chatId,
                     text: `Configurar notificações 📅\n\n${statusMsg}`,
                     reply_markup: {
@@ -168,9 +150,9 @@ export async function POST(req: Request) {
             }
         }
 
-        // ========================
-        // 🔘 CALLBACK
-        // ========================
+        // =========================
+        // CALLBACK (BOTÕES INLINE)
+        // =========================
         if (body.callback_query) {
             const { data, message } = body.callback_query;
             const chatId = message.chat.id;
@@ -178,6 +160,7 @@ export async function POST(req: Request) {
             const user = await findUserByChatId(chatId);
             if (!user) return NextResponse.json({ status: 'ok' });
 
+            // ESCOLHER DIA
             if (data.startsWith('day_')) {
                 const day = Number(data.split('_')[1]);
 
@@ -187,7 +170,7 @@ export async function POST(req: Request) {
                     body: JSON.stringify({ notificationDay: day }),
                 });
 
-                return await sendTelegramApiRequest('sendMessage', {
+                await sendTelegramApiRequest('sendMessage', {
                     chat_id: chatId,
                     text: `Escolha o horário para ${dias[day]} ⏰`,
                     reply_markup: {
@@ -201,6 +184,7 @@ export async function POST(req: Request) {
                 });
             }
 
+            // ESCOLHER HORA
             if (data.startsWith('hour_')) {
                 const hour = Number(data.split('_')[1]);
 
@@ -214,12 +198,13 @@ export async function POST(req: Request) {
                     }),
                 });
 
-                return await sendTelegramApiRequest('sendMessage', {
+                await sendTelegramApiRequest('sendMessage', {
                     chat_id: chatId,
                     text: `✅ Notificação ativada às ${hour}h`,
                 });
             }
 
+            // DESATIVAR
             if (data === 'disable_notifications') {
                 await fetch(`${MOCK_API_URL}/${user.id}`, {
                     method: 'PUT',
@@ -229,7 +214,7 @@ export async function POST(req: Request) {
                     }),
                 });
 
-                return await sendTelegramApiRequest('sendMessage', {
+                await sendTelegramApiRequest('sendMessage', {
                     chat_id: chatId,
                     text: '❌ Notificações desativadas',
                 });
