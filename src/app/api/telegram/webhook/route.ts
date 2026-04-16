@@ -59,7 +59,7 @@ export async function POST(req: Request) {
         const body = await req.json();
 
         // =========================
-        // RECEBER LOCALIZAÇÃO
+        // LOCALIZAÇÃO
         // =========================
         if (body.message?.location) {
             const { chat, location } = body.message;
@@ -87,7 +87,7 @@ export async function POST(req: Request) {
         }
 
         // =========================
-        // TEXTO (BOTÕES)
+        // TEXTO
         // =========================
         if (body.message?.text) {
             const { chat, text } = body.message;
@@ -97,14 +97,14 @@ export async function POST(req: Request) {
                 await sendMainMenu(chatId);
             }
 
-            if (text === '📄 Material') {
+            if (text === '📄 Pedido de Material') {
                 await sendTelegramApiRequest('sendMessage', {
                     chat_id: chatId,
                     text: `📄 Faça seu pedido:\n${MATERIAL_FORM_URL}`,
                 });
             }
 
-            if (text === '🗺 Maps') {
+            if (text === '🗺 Mapa de CTO') {
                 await sendTelegramApiRequest('sendMessage', {
                     chat_id: chatId,
                     text: `🗺 Localização:\n${GOOGLE_MAPS_URL}`,
@@ -118,14 +118,14 @@ export async function POST(req: Request) {
                 });
             }
 
-            if (text === '🧠 GPON/EPON') {
+            if (text === '🧠 GPON/EPON EliasFausto') {
                 await sendTelegramApiRequest('sendMessage', {
                     chat_id: chatId,
-                    text: `🧠 Ferramenta GPON/EPON:\n${SITE_URL_GPON_EPON}`,
+                    text: `🧠 Ferramenta:\n${SITE_URL_GPON_EPON}`,
                 });
             }
 
-            if (text === '📷 QR Code') {
+            if (text === '📷 QR Code Avaliação') {
                 await sendTelegramApiRequest('sendPhoto', {
                     chat_id: chatId,
                     photo: QR_CODE_IMAGE_URL,
@@ -133,7 +133,7 @@ export async function POST(req: Request) {
                 });
             }
 
-            if (text === '🔔 Notificações') {
+            if (text === '🔔 Me avisar para pedir material') {
                 const user = await findUserByChatId(chatId);
 
                 let statusMsg = '⚠️ Você ainda não configurou';
@@ -236,16 +236,4 @@ export async function POST(req: Request) {
                     }),
                 });
 
-                await sendTelegramApiRequest('sendMessage', {
-                    chat_id: chatId,
-                    text: '❌ Notificações desativadas',
-                });
-            }
-        }
-
-    } catch (error) {
-        console.error(error);
-    }
-
-    return NextResponse.json({ status: 'ok' });
-}
+                await sendTelegramApiRequest('send
