@@ -16,20 +16,22 @@ type User = {
     chatId: number;
     notificationsEnabled: boolean;
     notificationDay?: number;
+    notificationHour?: number;
 };
 
 const dias = [
     'Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'
 ];
 
+const horas = [8,9,10,11,12,13,14];
+
 async function findUserByChatId(chatId: number): Promise<User | null> {
     const res = await fetch(`${MOCK_API_URL}?chatId=${chatId}`);
-    if (!res.ok) return null;
     const users = await res.json();
     return users.length > 0 ? users[0] : null;
 }
 
-// MENU FIXO
+// MENU
 async function sendMainMenu(chatId: number) {
     await sendTelegramApiRequest('sendMessage', {
         chat_id: chatId,
@@ -42,31 +44,15 @@ async function sendMainMenu(chatId: number) {
                 ['📍 Localização', '🔔 Notificações'],
             ],
             resize_keyboard: true,
-            persistent_keyboard: true,
         },
     });
 }
 
 export async function POST(req: Request) {
-    if (!process.env.TELEGRAM_BOT_TOKEN) {
-        return NextResponse.json({ status: 'error' }, { status: 500 });
-    }
-
     try {
         const body = await req.json();
 
-        // 📍 LOCALIZAÇÃO
-        if (body.message?.location) {
-            const { chat } = body.message;
-            const { latitude, longitude } = body.message.location;
-
-            await sendTelegramApiRequest('sendMessage', {
-                chat_id: chat.id,
-                text: `${latitude}, ${longitude}`,
-            });
-        }
-
-        // 💬 TEXTO
+        // TEXTO
         if (body.message?.text) {
             const { chat, text } = body.message;
             const chatId = chat.id;
@@ -75,74 +61,13 @@ export async function POST(req: Request) {
                 await sendMainMenu(chatId);
             }
 
-            if (text === '📄 Material') {
-                await sendTelegramApiRequest('sendMessage', {
-                    chat_id: chatId,
-                    text: MATERIAL_FORM_URL,
-                });
-            }
-
-            if (text === '🗺 Maps') {
-                await sendTelegramApiRequest('sendMessage', {
-                    chat_id: chatId,
-                    text: GOOGLE_MAPS_URL,
-                });
-            }
-
-            if (text === '📲 Painel') {
-                await sendTelegramApiRequest('sendMessage', {
-                    chat_id: chatId,
-                    text: 'Abrir painel 👇',
-                    reply_markup: {
-                        inline_keyboard: [
-                            [{ text: '🚀 Abrir Painel', web_app: { url: SITE_URL_TOOL_KIT_ONE } }],
-                        ],
-                    },
-                });
-            }
-
-            if (text === '🧠 GPON/EPON') {
-                await sendTelegramApiRequest('sendMessage', {
-                    chat_id: chatId,
-                    text: 'Abrir sistema 👇',
-                    reply_markup: {
-                        inline_keyboard: [
-                            [{ text: '📡 Abrir GPON/EPON', web_app: { url: SITE_URL_GPON_EPON } }],
-                        ],
-                    },
-                });
-            }
-
-            if (text === '📷 QR Code') {
-                await sendTelegramApiRequest('sendPhoto', {
-                    chat_id: chatId,
-                    photo: QR_CODE_IMAGE_URL,
-                    caption: SITE_URL_TOP_DRAB,
-                });
-            }
-
-            if (text === '📍 Localização') {
-                await sendTelegramApiRequest('sendMessage', {
-                    chat_id: chatId,
-                    text: 'Clique abaixo 👇',
-                    reply_markup: {
-                        keyboard: [
-                            [{ text: '📍 Compartilhar localização', request_location: true }],
-                        ],
-                        resize_keyboard: true,
-                        one_time_keyboard: true,
-                    },
-                });
-            }
-
-            // 🔔 NOTIFICAÇÕES COM STATUS
             if (text === '🔔 Notificações') {
                 const user = await findUserByChatId(chatId);
 
                 let statusMsg = '⚠️ Você ainda não configurou';
 
-                if (user?.notificationsEnabled && user.notificationDay !== undefined) {
-                    statusMsg = `✅ Você configurou para ${dias[user.notificationDay]}`;
+                if (user?.notificationsEnabled && user.notificationDay !== undefined && user.notificationHour !== undefined) {
+                    statusMsg = `✅ ${dias[user.notificationDay]} às ${user.notificationHour}h`;
                 }
 
                 await sendTelegramApiRequest('sendMessage', {
@@ -165,16 +90,13 @@ export async function POST(req: Request) {
                             [
                                 { text: 'Domingo', callback_data: 'day_0' },
                             ],
-                            [
-                                { text: '❌ Desativar', callback_data: 'disable_notifications' },
-                            ],
                         ],
                     },
                 });
             }
         }
 
-        // 🔘 CALLBACKS
+        // CALLBACK
         if (body.callback_query) {
             const { data, message } = body.callback_query;
             const chatId = message.chat.id;
@@ -182,21 +104,47 @@ export async function POST(req: Request) {
             const user = await findUserByChatId(chatId);
             if (!user) return;
 
+            // ESCOLHE DIA
             if (data.startsWith('day_')) {
                 const day = Number(data.split('_')[1]);
 
                 await fetch(`${MOCK_API_URL}/${user.id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ notificationDay: day }),
+                });
+
+                // MOSTRAR HORAS
+                await sendTelegramApiRequest('sendMessage', {
+                    chat_id: chatId,
+                    text: `Escolha o horário para ${dias[day]} ⏰`,
+                    reply_markup: {
+                        inline_keyboard: [
+                            horas.map(h => ({
+                                text: `${h}h`,
+                                callback_data: `hour_${h}`
+                            }))
+                        ],
+                    },
+                });
+            }
+
+            // ESCOLHE HORA
+            if (data.startsWith('hour_')) {
+                const hour = Number(data.split('_')[1]);
+
+                await fetch(`${MOCK_API_URL}/${user.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        notificationDay: day,
+                        notificationHour: hour,
                         notificationsEnabled: true,
                     }),
                 });
 
                 await sendTelegramApiRequest('sendMessage', {
                     chat_id: chatId,
-                    text: `✅ Notificação ativa para ${dias[day]}`,
+                    text: `✅ Notificação ativada às ${hour}h`,
                 });
             }
 
