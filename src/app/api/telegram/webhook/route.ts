@@ -41,12 +41,12 @@ async function sendMainMenu(chatId: number) {
         text: '👇 Menu principal',
         reply_markup: {
             keyboard: [
-                ['📄 Material', '🗺 Maps'],
-                ['📲 Painel', '🧠 GPON/EPON'],
-                ['📷 QR Code'],
+                ['📄 Pedido de Material', '🗺 Mapa de CTO'],
+                ['📲 Painel', '🧠 GPON/EPON EliasFausto'],
+                ['📷 QR Code Avaliação'],
                 [
-                    { text: '📍 Enviar localização', request_location: true },
-                    { text: '🔔 Notificações' }
+                    { text: '📍 Minha Coordenada', request_location: true },
+                    { text: '🔔 Me avisar para pedir material' }
                 ],
             ],
             resize_keyboard: true,
