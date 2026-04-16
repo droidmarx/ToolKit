@@ -72,13 +72,10 @@ button:hover { background:#2563eb; }
 .toggle.on { background:#22c55e; }
 .toggle.off { background:#ef4444; }
 
-.send {
-    background:#f59e0b;
-}
+.send { background:#f59e0b; }
+.send:hover { background:#d97706; }
 
-.send:hover {
-    background:#d97706;
-}
+.material { background:#22c55e; }
 
 .header {
     display:flex;
@@ -86,8 +83,13 @@ button:hover { background:#2563eb; }
     margin-bottom:20px;
 }
 
-.refresh {
-    background:#22c55e;
+.refresh { background:#22c55e; }
+
+.avatar {
+    width:40px;
+    height:40px;
+    border-radius:50%;
+    object-fit:cover;
 }
 </style>
 </head>
@@ -117,6 +119,20 @@ const API = "https://699107e56279728b0153afac.mockapi.io/Telegran";
 const dias = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
 const horas = [8,9,10,11,12,13,14];
 
+async function getUserInfo(chatId) {
+    try {
+        const res = await fetch('/api/telegram/get-user-info', {
+            method:"POST",
+            headers:{ "Content-Type":"application/json" },
+            body: JSON.stringify({ chatId })
+        });
+
+        return await res.json();
+    } catch {
+        return { name: "Sem nome", photoUrl: null };
+    }
+}
+
 async function loadUsers() {
     const res = await fetch(API);
     const users = await res.json();
@@ -124,7 +140,9 @@ async function loadUsers() {
     const container = document.getElementById("users");
     container.innerHTML = "";
 
-    users.forEach(user => {
+    for (const user of users) {
+        const info = await getUserInfo(user.chatId);
+
         const card = document.createElement("div");
         card.className = "card";
 
@@ -132,7 +150,14 @@ async function loadUsers() {
 
         card.innerHTML = `
             <div class="row">
-                <strong>Chat ID:</strong> ${user.chatId}
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <img class="avatar" src="${info.photoUrl || 'https://via.placeholder.com/40'}"/>
+                    <div>
+                        <strong>${info.name}</strong><br>
+                        <small>${user.chatId}</small>
+                    </div>
+                </div>
+
                 <span class="badge ${status}">
                     ${user.notificationsEnabled ? "Ativo" : "Desativado"}
                 </span>
@@ -173,22 +198,33 @@ async function loadUsers() {
                 <button class="send" onclick="sendMessage('${user.chatId}', '${user.id}')">
                     📤 Enviar mensagem
                 </button>
+
+                <button class="material" onclick="sendMaterial('${user.chatId}')">
+                    📦 Material
+                </button>
             </div>
         `;
 
         container.appendChild(card);
+    }
+}
+
+async function sendMaterial(chatId) {
+    await fetch('/api/telegram/send-material', {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ chatId })
     });
+
+    alert("Material enviado 📦");
 }
 
 async function updateUser(id, field, value) {
     await fetch(`${API}/${id}`, {
         method:"PUT",
         headers:{ "Content-Type":"application/json" },
-        body:JSON.stringify({
-            [field]: Number(value)
-        })
+        body:JSON.stringify({ [field]: Number(value) })
     });
-
     loadUsers();
 }
 
@@ -201,53 +237,32 @@ async function toggle(id, current) {
             lastNotificationSent: null
         })
     });
-
     loadUsers();
 }
 
 async function deleteUser(id) {
     if(!confirm("Excluir usuário?")) return;
-
-    await fetch(`${API}/${id}`, {
-        method:"DELETE"
-    });
-
+    await fetch(`${API}/${id}`, { method:"DELETE" });
     loadUsers();
 }
 
-// ✅ ENVIO VIA BACKEND (SEM CORS)
 async function sendMessage(chatId, userId) {
     const input = document.getElementById(`msg-${userId}`);
     const text = input.value;
 
-    if(!text) {
-        alert("Digite uma mensagem!");
-        return;
-    }
+    if(!text) return alert("Digite uma mensagem!");
 
-    try {
-        const res = await fetch('/api/telegram/send-message', {
-            method:"POST",
-            headers:{ "Content-Type":"application/json" },
-            body: JSON.stringify({
-                chatId,
-                text
-            })
-        });
+    const res = await fetch('/api/telegram/send-message', {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ chatId, text })
+    });
 
-        const data = await res.json();
+    const data = await res.json();
 
-        if (data.ok) {
-            alert("Mensagem enviada 🚀");
-            input.value = "";
-        } else {
-            alert("Erro ao enviar");
-            console.error(data);
-        }
-
-    } catch (err) {
-        alert("Erro de conexão");
-        console.error(err);
+    if (data.ok) {
+        alert("Enviado 🚀");
+        input.value = "";
     }
 }
 
