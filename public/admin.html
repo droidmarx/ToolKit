@@ -94,6 +94,14 @@ button:hover { background:#2563eb; }
 
 <body>
 
+<script>
+const senha = prompt("Senha:");
+if (senha !== "admin123") {
+    document.body.innerHTML = "<h1>Acesso negado</h1>";
+    throw new Error("bloqueado");
+}
+</script>
+
 <div class="container">
     <div class="header">
         <h1>📊 Painel de Notificações</h1>
@@ -105,7 +113,6 @@ button:hover { background:#2563eb; }
 
 <script>
 const API = "https://699107e56279728b0153afac.mockapi.io/Telegran";
-const BOT_TOKEN = "SEU_TOKEN_AQUI";
 
 const dias = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
 const horas = [8,9,10,11,12,13,14];
@@ -159,7 +166,7 @@ async function loadUsers() {
             </div>
 
             <div>
-                <input id="msg-${user.id}" placeholder="Digite uma mensagem para enviar..." />
+                <input id="msg-${user.id}" placeholder="Digite uma mensagem..." />
             </div>
 
             <div class="row">
@@ -208,7 +215,7 @@ async function deleteUser(id) {
     loadUsers();
 }
 
-// 🚀 ENVIO MANUAL
+// ✅ ENVIO VIA BACKEND (SEM CORS)
 async function sendMessage(chatId, userId) {
     const input = document.getElementById(`msg-${userId}`);
     const text = input.value;
@@ -219,20 +226,27 @@ async function sendMessage(chatId, userId) {
     }
 
     try {
-        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+        const res = await fetch('/api/telegram/send-message', {
             method:"POST",
             headers:{ "Content-Type":"application/json" },
             body: JSON.stringify({
-                chat_id: chatId,
-                text: text
+                chatId,
+                text
             })
         });
 
-        alert("Mensagem enviada 🚀");
-        input.value = "";
+        const data = await res.json();
+
+        if (data.ok) {
+            alert("Mensagem enviada 🚀");
+            input.value = "";
+        } else {
+            alert("Erro ao enviar");
+            console.error(data);
+        }
 
     } catch (err) {
-        alert("Erro ao enviar");
+        alert("Erro de conexão");
         console.error(err);
     }
 }
