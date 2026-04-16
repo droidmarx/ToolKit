@@ -42,7 +42,15 @@ async function sendMainMenu(chatId: number) {
                 ['📄 Material', '🗺 Maps'],
                 ['📲 Painel', '🧠 GPON/EPON'],
                 ['📷 QR Code'],
-                ['📍 Localização', '🔔 Notificações'],
+                [
+                    {
+                        text: '📍 Localização',
+                        request_location: true
+                    },
+                    {
+                        text: '🔔 Notificações'
+                    }
+                ],
             ],
             resize_keyboard: true,
         },
@@ -54,6 +62,23 @@ export async function POST(req: Request) {
         const body = await req.json();
 
         // ========================
+        // 📍 RECEBE LOCALIZAÇÃO
+        // ========================
+        if (body.message?.location) {
+            const { chat, location } = body.message;
+            const chatId = chat.id;
+
+            const { latitude, longitude } = location;
+
+            await sendTelegramApiRequest('sendMessage', {
+                chat_id: chatId,
+                text: `📍 Sua localização:\n\n${latitude}, ${longitude}`,
+            });
+
+            return NextResponse.json({ status: 'ok' });
+        }
+
+        // ========================
         // 📩 MENSAGENS DE TEXTO
         // ========================
         if (body.message?.text) {
@@ -61,10 +86,10 @@ export async function POST(req: Request) {
             const chatId = chat.id;
 
             if (text === '/start') {
-                return await sendMainMenu(chatId);
+                await sendMainMenu(chatId);
+                return;
             }
 
-            // 📄 MATERIAL
             if (text === '📄 Material') {
                 return await sendTelegramApiRequest('sendMessage', {
                     chat_id: chatId,
@@ -72,7 +97,6 @@ export async function POST(req: Request) {
                 });
             }
 
-            // 🗺 MAPS
             if (text === '🗺 Maps') {
                 return await sendTelegramApiRequest('sendMessage', {
                     chat_id: chatId,
@@ -80,7 +104,6 @@ export async function POST(req: Request) {
                 });
             }
 
-            // 📲 PAINEL
             if (text === '📲 Painel') {
                 return await sendTelegramApiRequest('sendMessage', {
                     chat_id: chatId,
@@ -88,7 +111,6 @@ export async function POST(req: Request) {
                 });
             }
 
-            // 🧠 GPON/EPON
             if (text === '🧠 GPON/EPON') {
                 return await sendTelegramApiRequest('sendMessage', {
                     chat_id: chatId,
@@ -96,7 +118,6 @@ export async function POST(req: Request) {
                 });
             }
 
-            // 📷 QR CODE
             if (text === '📷 QR Code') {
                 return await sendTelegramApiRequest('sendPhoto', {
                     chat_id: chatId,
@@ -105,16 +126,6 @@ export async function POST(req: Request) {
                 });
             }
 
-            // 📍 LOCALIZAÇÃO
-            if (text === '📍 Localização') {
-                return await sendTelegramApiRequest('sendLocation', {
-                    chat_id: chatId,
-                    latitude: -22.9056,  // ajuste se quiser
-                    longitude: -47.0608,
-                });
-            }
-
-            // 🔔 NOTIFICAÇÕES (já existente)
             if (text === '🔔 Notificações') {
                 const user = await findUserByChatId(chatId);
 
@@ -158,14 +169,14 @@ export async function POST(req: Request) {
         }
 
         // ========================
-        // 🔘 CALLBACK BUTTONS
+        // 🔘 CALLBACK
         // ========================
         if (body.callback_query) {
             const { data, message } = body.callback_query;
             const chatId = message.chat.id;
 
             const user = await findUserByChatId(chatId);
-            if (!user) return;
+            if (!user) return NextResponse.json({ status: 'ok' });
 
             if (data.startsWith('day_')) {
                 const day = Number(data.split('_')[1]);
