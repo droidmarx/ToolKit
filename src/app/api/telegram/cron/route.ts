@@ -8,6 +8,8 @@ type User = {
     id: string;
     chatId: number;
     notificationsEnabled: boolean;
+    notificationDay?: number;
+    notificationHour?: number;
 };
 
 export async function GET() {
@@ -15,54 +17,48 @@ export async function GET() {
 
     if (!botToken) {
         console.error('CRON: TELEGRAM_BOT_TOKEN is not set.');
-        return NextResponse.json({ status: 'error', message: 'Bot token not configured.' }, { status: 500 });
+        return NextResponse.json({ status: 'error' }, { status: 500 });
     }
-    
+
     try {
-        console.log('CRON: Fetching users for scheduled messages...');
+        const now = new Date();
+
+        const currentDay = now.getDay(); // 0-6
+        const currentHour = now.getHours(); // 0-23
+
+        console.log(`CRON: Rodando para dia ${currentDay} hora ${currentHour}`);
+
         const usersResponse = await fetch(MOCK_API_URL);
-        if (!usersResponse.ok) {
-            const errorBody = await usersResponse.text();
-            console.error('CRON: Failed to fetch users from mock API', errorBody);
-            return NextResponse.json({ status: 'error', message: 'Failed to fetch users.', details: errorBody }, { status: 500 });
-        }
-
         const users: User[] = await usersResponse.json();
-        const subscribedUsers = users.filter(user => user.notificationsEnabled);
 
-        if (subscribedUsers.length === 0) {
-            console.log('CRON: No users subscribed for notifications. Job finished.');
-            return NextResponse.json({ status: 'ok', message: 'No users to notify.' });
+        const filteredUsers = users.filter(user =>
+            user.notificationsEnabled &&
+            user.notificationDay === currentDay &&
+            user.notificationHour === currentHour
+        );
+
+        if (filteredUsers.length === 0) {
+            console.log('CRON: Nenhum usuário para notificar agora.');
+            return NextResponse.json({ status: 'ok' });
         }
-        
-        console.log(`CRON: Found ${subscribedUsers.length} subscribed users. Sending messages...`);
 
-        const message = `Organize seus materiais verifique oque está faltando e não se esqueça de fazer o pedido: ${MATERIAL_FORM_URL}`;
-        
-        const sendPromises = subscribedUsers.map(user => 
+        const message = `Organize seus materiais e faça seu pedido: ${MATERIAL_FORM_URL}`;
+
+        const sendPromises = filteredUsers.map(user =>
             sendTelegramApiRequest('sendMessage', {
                 chat_id: user.chatId,
                 text: message,
             })
         );
 
-        const results = await Promise.allSettled(sendPromises);
-        
-        let successCount = 0;
-        results.forEach((result, index) => {
-            if (result.status === 'fulfilled' && result.value.ok) {
-                successCount++;
-            } else {
-                const chatId = subscribedUsers[index].chatId;
-                console.error(`CRON: Failed to send message to chat ID ${chatId}`, result.status === 'rejected' ? result.reason : 'Telegram API error');
-            }
-        });
+        await Promise.allSettled(sendPromises);
 
-        console.log(`CRON: Finished sending messages. Success: ${successCount}/${subscribedUsers.length}`);
-        return NextResponse.json({ status: 'ok', message: `Sent messages to ${successCount} of ${subscribedUsers.length} users.` });
+        console.log(`CRON: Mensagens enviadas para ${filteredUsers.length} usuários`);
+
+        return NextResponse.json({ status: 'ok' });
 
     } catch (error) {
-        console.error('CRON: An unexpected error occurred.', error);
-        return NextResponse.json({ status: 'error', message: 'An unexpected error occurred.' }, { status: 500 });
+        console.error(error);
+        return NextResponse.json({ status: 'error' }, { status: 500 });
     }
 }
