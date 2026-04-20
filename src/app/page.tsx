@@ -21,7 +21,8 @@ import {
   QrCode,
   PackagePlus,
   ExternalLink,
-  X
+  X,
+  ShieldCheck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -222,6 +223,7 @@ export default function Home() {
               <ToolButton onClick={handleOpenSpeedtest} icon={<Gauge size={32} />} title="Speed Test" />
               <ToolButton onClick={() => setQrModalOpen(true)} icon={<QrCode size={32} />} title="QRcode de Avaliação" />
               <ToolButton href="https://forms.gle/UEqhzzLM3TGXgTbE6" icon={<PackagePlus size={32} />} title="Pedido de material" />
+              <ToolButton href="/admin" icon={<ShieldCheck size={32} />} title="Painel Administrador" primary />
 
               {/* Map Section */}
               <div className="col-span-2 sm:col-span-3 md:col-span-4 p-4 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm flex flex-col md:flex-row items-center justify-between gap-4">
