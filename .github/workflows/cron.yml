@@ -1,0 +1,16 @@
+name: Telegram Notification Cron
+
+on:
+  schedule:
+    # Roda a cada 30 minutos
+    - cron: '*/30 * * * *'
+  workflow_dispatch: # Permite rodar manualmente pelo painel do GitHub
+
+jobs:
+  ping-cron:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Cron API
+        run: |
+          # ATENÇÃO: Substitua 'sua-url-do-vercel.vercel.app' pela URL real do seu projeto
+          curl -X GET "https://sua-url-do-vercel.vercel.app/api/telegram/cron"

@@ -61,7 +61,7 @@ export async function GET() {
         const filteredUsers = users.filter(user =>
             user.notificationsEnabled &&
             user.notificationDay === currentDay &&
-            Math.abs((user.notificationHour ?? -99) - currentHour) <= 1 &&
+            user.notificationHour === currentHour &&
             user.lastNotificationSent !== today
         );
 
