@@ -41,12 +41,12 @@ async function sendMainMenu(chatId: number) {
         text: '👇 Menu principal',
         reply_markup: {
             keyboard: [
-                ['📄 Material', '🗺 Maps'],
-                ['📲 Painel', '🧠 GPON/EPON'],
-                ['📷 QR Code'],
+                ['📄 Pedido de material', '🗺 Mapa de CTO'],
+                ['📲 Painel de ferramentas', '🧠 GPON / EPON (EliasFausto)'],
+                ['📷 QRcode de Avaliação'],
                 [
-                    { text: '📍 Enviar localização', request_location: true },
-                    { text: '🔔 Notificações' }
+                    { text: '📍 Quais minhas coordenadas', request_location: true },
+                    { text: '🔔 Ativar lembrete de materiais' }
                 ],
             ],
             resize_keyboard: true,
@@ -97,35 +97,35 @@ export async function POST(req: Request) {
                 await sendMainMenu(chatId);
             }
 
-            if (text === '📄 Material') {
+            if (text === '📄 Pedido de material') {
                 await sendTelegramApiRequest('sendMessage', {
                     chat_id: chatId,
                     text: `📄 Faça seu pedido:\n${MATERIAL_FORM_URL}`,
                 });
             }
 
-            if (text === '🗺 Maps') {
+            if (text === '🗺 Mapa de CTO') {
                 await sendTelegramApiRequest('sendMessage', {
                     chat_id: chatId,
                     text: `🗺 Localização:\n${GOOGLE_MAPS_URL}`,
                 });
             }
 
-            if (text === '📲 Painel') {
+            if (text === '📲 Painel de ferramentas') {
                 await sendTelegramApiRequest('sendMessage', {
                     chat_id: chatId,
                     text: `📲 Acesse o painel:\n${SITE_URL_TOOL_KIT_ONE}`,
                 });
             }
 
-            if (text === '🧠 GPON/EPON') {
+            if (text === '🧠 GPON / EPON (EliasFausto)') {
                 await sendTelegramApiRequest('sendMessage', {
                     chat_id: chatId,
                     text: `🧠 Ferramenta GPON/EPON:\n${SITE_URL_GPON_EPON}`,
                 });
             }
 
-            if (text === '📷 QR Code') {
+            if (text === '📷 QRcode de Avaliação') {
                 await sendTelegramApiRequest('sendPhoto', {
                     chat_id: chatId,
                     photo: QR_CODE_IMAGE_URL,
@@ -133,7 +133,7 @@ export async function POST(req: Request) {
                 });
             }
 
-            if (text === '🔔 Notificações') {
+            if (text === '🔔 Ativar lembrete de materiais') {
                 const user = await findUserByChatId(chatId);
 
                 let statusMsg = '⚠️ Você ainda não configurou';

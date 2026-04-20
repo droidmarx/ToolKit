@@ -220,14 +220,14 @@ export default function Home() {
               <ToolButton href={hostUrl} icon={<Router size={32} />} title={hostText} />
               <ToolButton href="https://bgp.he.net/" icon={<Spline size={32} />} title="BGP Toolkit" />
               <ToolButton onClick={handleOpenSpeedtest} icon={<Gauge size={32} />} title="Speed Test" />
-              <ToolButton onClick={() => setQrModalOpen(true)} icon={<QrCode size={32} />} title="QR Code" />
-              <ToolButton href="https://forms.gle/UEqhzzLM3TGXgTbE6" icon={<PackagePlus size={32} />} title="Pedido de Material" />
+              <ToolButton onClick={() => setQrModalOpen(true)} icon={<QrCode size={32} />} title="QRcode de Avaliação" />
+              <ToolButton href="https://forms.gle/UEqhzzLM3TGXgTbE6" icon={<PackagePlus size={32} />} title="Pedido de material" />
 
               {/* Map Section */}
               <div className="col-span-2 sm:col-span-3 md:col-span-4 p-4 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm flex flex-col md:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <Map size={24} className="text-green-400" />
-                  <h3 className="font-medium">Mapas CTO</h3>
+                  <h3 className="font-medium">Mapa de CTO</h3>
                 </div>
                 <div className="flex items-center justify-center gap-4">
                   <MapIconButton href="https://www.google.com/maps/d/u/0/edit?hl=pt-BR&mid=1l_ch6qupuXz0Dnw6h9Vhom1Y1g3ibaY&ll=-23.104603351905947%2C-47.26240628194967&z=13" title="Editar Mapa" icon={<FilePenLine />} />
