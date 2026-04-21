@@ -17,6 +17,14 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const force = searchParams.get('force') === 'true';
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
+    const cronSecret = process.env.CRON_SECRET;
+
+    // Validação de segurança
+    const authHeader = req.headers.get('authorization');
+    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+        console.warn('CRON: Tentativa de acesso não autorizada.');
+        return NextResponse.json({ status: 'unauthorized' }, { status: 401 });
+    }
 
     if (!botToken) {
         console.error('CRON: TELEGRAM_BOT_TOKEN is not set.');

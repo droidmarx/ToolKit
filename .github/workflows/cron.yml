@@ -12,4 +12,5 @@ jobs:
     steps:
       - name: Call Cron API
         run: |
-          curl -X GET "https://tool-kit-one.vercel.app/api/telegram/cron"
+          curl -X GET "https://tool-kit-one.vercel.app/api/telegram/cron" \
+          -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
