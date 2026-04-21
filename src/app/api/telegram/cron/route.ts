@@ -13,7 +13,9 @@ type User = {
     lastNotificationSent?: string;
 };
 
-export async function GET() {
+export async function GET(req: Request) {
+    const { searchParams } = new URL(req.url);
+    const force = searchParams.get('force') === 'true';
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
 
     if (!botToken) {
@@ -49,19 +51,31 @@ export async function GET() {
             sáb: 6,
         };
 
-        const currentDay = diasMap[weekdayPart?.value.toLowerCase() || 'dom'];
+        // Remove pontos ou caracteres especiais que o Intl pode retornar (ex: "ter.")
+        const weekdayClean = weekdayPart?.value.toLowerCase().replace(/[^a-záàâãéèêíïóôõöúç]/g, '') || 'dom';
+        const currentDay = diasMap[weekdayClean];
 
-        console.log(`CRON (SP): Dia ${currentDay} Hora ${currentHour}`);
+        console.log(`CRON (SP): Dia ${currentDay} (${weekdayClean}) Hora ${currentHour}`);
 
         const usersResponse = await fetch(MOCK_API_URL);
         const users: User[] = await usersResponse.json();
 
-        const today = new Date().toISOString().split('T')[0];
+        // Hoje no fuso de SP
+        const today = new Intl.DateTimeFormat('pt-BR', {
+            timeZone: 'America/Sao_Paulo',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+        }).format(now).split('/').reverse().join('-');
+
+        if (force) {
+            console.log('CRON: MODO FORCE ATIVADO - Ignorando verificação de hora.');
+        }
 
         const filteredUsers = users.filter(user =>
             user.notificationsEnabled &&
             user.notificationDay === currentDay &&
-            user.notificationHour === currentHour &&
+            (force || user.notificationHour === currentHour) &&
             user.lastNotificationSent !== today
         );
 
@@ -70,7 +84,7 @@ export async function GET() {
             return NextResponse.json({ status: 'ok' });
         }
 
-        const message = `Organize seus materiais e faça seu pedido: ${MATERIAL_FORM_URL}`;
+        const message = `Hoje é dia de pedir material, revise tudo o que está faltando e não esqueça de pedir: ${MATERIAL_FORM_URL}`;
 
         for (const user of filteredUsers) {
             await sendTelegramApiRequest('sendMessage', {

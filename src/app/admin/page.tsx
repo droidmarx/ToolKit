@@ -51,6 +51,7 @@ export default function AdminPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [forcing, setForcing] = useState(false);
   const [messages, setMessages] = useState<Record<string, string>>({});
 
   const loadUsers = useCallback(async () => {
@@ -156,6 +157,37 @@ export default function AdminPage() {
     }
   };
 
+  const handleForceNotifications = async () => {
+    if (!confirm("Isso enviará as notificações para todos os usuários agendados para hoje que ainda não as receberam. Continuar?")) return;
+    
+    setForcing(true);
+    try {
+      const res = await fetch('/api/telegram/cron?force=true');
+      const data = await res.json();
+      if (data.status === 'ok') {
+        toast({
+          title: "Sucesso!",
+          description: "Notificações disparadas com sucesso.",
+        });
+        loadUsers();
+      } else {
+        toast({
+          title: "Erro",
+          description: "Ocorreu um erro ao disparar as notificações.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Erro de Conexão",
+        description: "Não foi possível conectar ao servidor.",
+        variant: "destructive",
+      });
+    } finally {
+      setForcing(false);
+    }
+  };
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-[#0f172a] flex items-center justify-center p-4">
@@ -211,15 +243,26 @@ export default function AdminPage() {
             </h1>
             <p className="text-slate-400 mt-2">Gerencie as notificações automáticas e comunicação direta via Telegram.</p>
           </div>
-          <Button 
-            onClick={loadUsers} 
-            disabled={refreshing}
-            variant="outline" 
-            className="border-white/10 bg-white/5 hover:bg-white/10 backdrop-blur-sm self-start md:self-center"
-          >
-            {refreshing ? <Loader2 className="animate-spin mr-2" size={18} /> : <RefreshCw className="mr-2" size={18} />}
-            Atualizar Lista
-          </Button>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button 
+              onClick={handleForceNotifications} 
+              disabled={forcing || refreshing}
+              variant="default"
+              className="bg-amber-600 hover:bg-amber-700 text-white border-none backdrop-blur-sm"
+            >
+              {forcing ? <Loader2 className="animate-spin mr-2" size={18} /> : <Bell className="mr-2" size={18} />}
+              Disparar Agora
+            </Button>
+            <Button 
+              onClick={loadUsers} 
+              disabled={refreshing || forcing}
+              variant="outline" 
+              className="border-white/10 bg-white/5 hover:bg-white/10 backdrop-blur-sm"
+            >
+              {refreshing ? <Loader2 className="animate-spin mr-2" size={18} /> : <RefreshCw className="mr-2" size={18} />}
+              Atualizar Lista
+            </Button>
+          </div>
         </header>
 
         {loading ? (
