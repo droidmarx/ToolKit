@@ -27,6 +27,7 @@ import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { forceCronAction } from './actions';
 
 const API = "https://699107e56279728b0153afac.mockapi.io/Telegran";
 const ADMIN_PASSWORD = "admin123";
@@ -162,12 +163,11 @@ export default function AdminPage() {
     
     setForcing(true);
     try {
-      const res = await fetch('/api/telegram/cron?force=true');
-      const data = await res.json();
+      const data = await forceCronAction();
       if (data.status === 'ok') {
         toast({
           title: "Sucesso!",
-          description: "Notificações disparadas com sucesso.",
+          description: `Notificações disparadas com sucesso (${data.sentCount} enviadas).`,
         });
         loadUsers();
       } else {
@@ -179,8 +179,8 @@ export default function AdminPage() {
       }
     } catch (error) {
       toast({
-        title: "Erro de Conexão",
-        description: "Não foi possível conectar ao servidor.",
+        title: "Erro de Servidor",
+        description: "Não foi possível completar a ação no servidor.",
         variant: "destructive",
       });
     } finally {
