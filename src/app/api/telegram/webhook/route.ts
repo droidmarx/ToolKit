@@ -220,7 +220,7 @@ export async function POST(req: Request) {
 
                 await sendTelegramApiRequest('sendMessage', {
                     chat_id: chatId,
-                    text: `Escolha o horário para ${dias[day]} ⏰`,
+                    text: `Escolha a hora para ${dias[day]} ⏰`,
                     reply_markup: {
                         inline_keyboard: Array.from({ length: Math.ceil(horas.length / 4) }, (_, i) => 
                             horas.slice(i * 4, (i + 1) * 4).map(h => ({
@@ -235,11 +235,37 @@ export async function POST(req: Request) {
             if (data.startsWith('hour_')) {
                 const hour = Number(data.split('_')[1]);
 
+                // Salva a hora e pede os minutos
+                await fetch(`${MOCK_API_URL}/${user.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ notificationHour: hour }),
+                });
+
+                const minutosOpcoes = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
+
+                await sendTelegramApiRequest('sendMessage', {
+                    chat_id: chatId,
+                    text: `Agora escolha os minutos para as ${hour}h ⏱️`,
+                    reply_markup: {
+                        inline_keyboard: Array.from({ length: Math.ceil(minutosOpcoes.length / 4) }, (_, i) => 
+                            minutosOpcoes.slice(i * 4, (i + 1) * 4).map(m => ({
+                                text: `${String(m).padStart(2, '0')}m`,
+                                callback_data: `min_${m}`
+                            }))
+                        ),
+                    },
+                });
+            }
+
+            if (data.startsWith('min_')) {
+                const min = Number(data.split('_')[1]);
+
                 await fetch(`${MOCK_API_URL}/${user.id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        notificationHour: hour,
+                        notificationMinute: min,
                         notificationsEnabled: true,
                         lastNotificationSent: null
                     }),
@@ -247,7 +273,7 @@ export async function POST(req: Request) {
 
                 await sendTelegramApiRequest('sendMessage', {
                     chat_id: chatId,
-                    text: `✅ Notificação ativada às ${hour}h`,
+                    text: `✅ Notificação ativada para ${dias[user.notificationDay || 0]} às ${user.notificationHour}h:${String(min).padStart(2, '0')}`,
                 });
             }
 
