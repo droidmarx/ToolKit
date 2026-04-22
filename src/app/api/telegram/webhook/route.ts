@@ -17,6 +17,7 @@ type User = {
     notificationsEnabled: boolean;
     notificationDay?: number;
     notificationHour?: number;
+    notificationMinute?: number;
     lastNotificationSent?: string;
     latitude?: number;
     longitude?: number;

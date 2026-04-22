@@ -38,6 +38,7 @@ type User = {
   notificationsEnabled: boolean;
   notificationDay: number;
   notificationHour: number;
+  notificationMinute: number;
   lastNotificationSent?: string;
   name?: string;
   photoUrl?: string;
@@ -45,6 +46,7 @@ type User = {
 
 const dias = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 const horas = Array.from({ length: 24 }, (_, i) => i);
+const minutos = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -305,16 +307,16 @@ export default function AdminPage() {
                 
                 <CardContent className="space-y-6 flex-grow">
                   {/* Scheduling Section */}
-                  <div className="grid grid-cols-2 gap-3 p-3 rounded-xl bg-black/20 border border-white/5">
+                  <div className="grid grid-cols-3 gap-2 p-3 rounded-xl bg-black/20 border border-white/5">
                     <div className="space-y-1.5">
                       <label className="text-[10px] uppercase font-bold text-slate-500 flex items-center gap-1">
-                        <Calendar size={10} /> Dia do Envio
+                        <Calendar size={10} /> Dia
                       </label>
                       <Select 
                         value={String(user.notificationDay)} 
                         onValueChange={(val) => updateUser(user.id, { notificationDay: Number(val) })}
                       >
-                        <SelectTrigger className="h-9 bg-transparent border-white/10 text-xs focus:ring-primary/30">
+                        <SelectTrigger className="h-9 bg-transparent border-white/10 text-[10px] focus:ring-primary/30 px-2">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="bg-[#1e293b] border-white/10 text-white">
@@ -324,17 +326,33 @@ export default function AdminPage() {
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-[10px] uppercase font-bold text-slate-500 flex items-center gap-1">
-                        <Clock size={10} /> Hora do Envio
+                        <Clock size={10} /> Hora
                       </label>
                       <Select 
                         value={String(user.notificationHour)} 
                         onValueChange={(val) => updateUser(user.id, { notificationHour: Number(val) })}
                       >
-                        <SelectTrigger className="h-9 bg-transparent border-white/10 text-xs focus:ring-primary/30">
+                        <SelectTrigger className="h-9 bg-transparent border-white/10 text-[10px] focus:ring-primary/30 px-2">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="bg-[#1e293b] border-white/10 text-white">
-                          {horas.map(h => <SelectItem key={h} value={String(h)}>{h}h:00</SelectItem>)}
+                          {horas.map(h => <SelectItem key={h} value={String(h)}>{h}h</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] uppercase font-bold text-slate-500 flex items-center gap-1">
+                        <Clock size={10} /> Min
+                      </label>
+                      <Select 
+                        value={String(user.notificationMinute || 0)} 
+                        onValueChange={(val) => updateUser(user.id, { notificationMinute: Number(val) })}
+                      >
+                        <SelectTrigger className="h-9 bg-transparent border-white/10 text-[10px] focus:ring-primary/30 px-2">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-[#1e293b] border-white/10 text-white">
+                          {minutos.map(m => <SelectItem key={m} value={String(m)}>{String(m).padStart(2, '0')}m</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </div>
