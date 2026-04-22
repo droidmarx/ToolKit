@@ -44,7 +44,7 @@ type User = {
 };
 
 const dias = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
-const horas = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+const horas = Array.from({ length: 24 }, (_, i) => i);
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);

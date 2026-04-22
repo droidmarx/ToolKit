@@ -26,7 +26,7 @@ const dias = [
     'Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'
 ];
 
-const horas = [8,9,10,11,12,13,14];
+const horas = Array.from({ length: 24 }, (_, i) => i);
 
 async function findUserByChatId(chatId: number): Promise<User | null> {
     const res = await fetch(`${MOCK_API_URL}?chatId=${chatId}`);
@@ -221,12 +221,12 @@ export async function POST(req: Request) {
                     chat_id: chatId,
                     text: `Escolha o horário para ${dias[day]} ⏰`,
                     reply_markup: {
-                        inline_keyboard: [
-                            horas.map(h => ({
+                        inline_keyboard: Array.from({ length: Math.ceil(horas.length / 4) }, (_, i) => 
+                            horas.slice(i * 4, (i + 1) * 4).map(h => ({
                                 text: `${h}h`,
                                 callback_data: `hour_${h}`
                             }))
-                        ],
+                        ),
                     },
                 });
             }
