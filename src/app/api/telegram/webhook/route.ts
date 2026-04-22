@@ -30,8 +30,24 @@ const horas = [8,9,10,11,12,13,14];
 
 async function findUserByChatId(chatId: number): Promise<User | null> {
     const res = await fetch(`${MOCK_API_URL}?chatId=${chatId}`);
+    if (!res.ok) return null;
     const users = await res.json();
     return users.length > 0 ? users[0] : null;
+}
+
+async function ensureUserExists(chatId: number): Promise<User> {
+    const user = await findUserByChatId(chatId);
+    if (user) return user;
+
+    const res = await fetch(MOCK_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            chatId,
+            notificationsEnabled: false,
+        }),
+    });
+    return await res.json();
 }
 
 // MENU
@@ -50,6 +66,37 @@ async function sendMainMenu(chatId: number) {
                 ],
             ],
             resize_keyboard: true,
+        },
+    });
+}
+
+// SETUP NOTIFICAÇÕES
+async function promptNotificationSetup(chatId: number, statusMsg?: string) {
+    const msg = statusMsg || '⚠️ Você ainda não configurou';
+    await sendTelegramApiRequest('sendMessage', {
+        chat_id: chatId,
+        text: `Configurar notificações 📅\n\n${msg}`,
+        reply_markup: {
+            inline_keyboard: [
+                [
+                    { text: 'Segunda', callback_data: 'day_1' },
+                    { text: 'Terça', callback_data: 'day_2' },
+                ],
+                [
+                    { text: 'Quarta', callback_data: 'day_3' },
+                    { text: 'Quinta', callback_data: 'day_4' },
+                ],
+                [
+                    { text: 'Sexta', callback_data: 'day_5' },
+                    { text: 'Sábado', callback_data: 'day_6' },
+                ],
+                [
+                    { text: 'Domingo', callback_data: 'day_0' },
+                ],
+                [
+                    { text: '❌ Desativar', callback_data: 'disable_notifications' }
+                ]
+            ],
         },
     });
 }
@@ -94,7 +141,9 @@ export async function POST(req: Request) {
             const chatId = chat.id;
 
             if (text === '/start') {
+                await ensureUserExists(chatId);
                 await sendMainMenu(chatId);
+                await promptNotificationSetup(chatId);
             }
 
             if (text === '📄 Pedido de material') {
@@ -146,32 +195,7 @@ export async function POST(req: Request) {
                     statusMsg = `✅ ${dias[user.notificationDay]} às ${user.notificationHour}h`;
                 }
 
-                await sendTelegramApiRequest('sendMessage', {
-                    chat_id: chatId,
-                    text: `Configurar notificações 📅\n\n${statusMsg}`,
-                    reply_markup: {
-                        inline_keyboard: [
-                            [
-                                { text: 'Segunda', callback_data: 'day_1' },
-                                { text: 'Terça', callback_data: 'day_2' },
-                            ],
-                            [
-                                { text: 'Quarta', callback_data: 'day_3' },
-                                { text: 'Quinta', callback_data: 'day_4' },
-                            ],
-                            [
-                                { text: 'Sexta', callback_data: 'day_5' },
-                                { text: 'Sábado', callback_data: 'day_6' },
-                            ],
-                            [
-                                { text: 'Domingo', callback_data: 'day_0' },
-                            ],
-                            [
-                                { text: '❌ Desativar', callback_data: 'disable_notifications' }
-                            ]
-                        ],
-                    },
-                });
+                await promptNotificationSetup(chatId, statusMsg);
             }
         }
 
@@ -182,8 +206,7 @@ export async function POST(req: Request) {
             const { data, message } = body.callback_query;
             const chatId = message.chat.id;
 
-            const user = await findUserByChatId(chatId);
-            if (!user) return NextResponse.json({ status: 'ok' });
+            const user = await ensureUserExists(chatId);
 
             if (data.startsWith('day_')) {
                 const day = Number(data.split('_')[1]);
