@@ -72,7 +72,7 @@ async function sendMainMenu(chatId: number) {
 
 // SETUP NOTIFICAÇÕES
 async function promptNotificationSetup(chatId: number, statusMsg?: string) {
-    const msg = statusMsg || '⚠️ Você ainda não configurou';
+    const msg = statusMsg || '⚠️ Você ainda não configurou qual dia devo te lembrar de pedir materiais';
     await sendTelegramApiRequest('sendMessage', {
         chat_id: chatId,
         text: `Configurar notificações 📅\n\n${msg}`,
@@ -185,7 +185,7 @@ export async function POST(req: Request) {
             if (text === '🔔 Ativar lembrete de materiais') {
                 const user = await findUserByChatId(chatId);
 
-                let statusMsg = '⚠️ Você ainda não configurou';
+                let statusMsg = '⚠️ Você ainda não configurou qual dia devo te lembrar de pedir materiais';
 
                 if (
                     user?.notificationsEnabled &&
